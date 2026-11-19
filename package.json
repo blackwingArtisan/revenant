@@ -17,7 +17,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "npm run typecheck && npm test"
+    "check": "npm run typecheck && npm test",
+    "check:engine": "vitest run tests/unit/purity.test.ts",
+    "demo:ready": "playwright test tests/e2e/demo.spec.ts --project=desktop"
   },
   "dependencies": {
     "@fontsource/big-shoulders-display": "5.3.0",

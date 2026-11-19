@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Engine purity guard",
+      "description": "When any file under src/engine changes, fail fast if it reads the clock, randomness, storage, the network or browser globals, or imports anything outside the engine.",
+      "trigger": "PostFileSave",
+      "matcher": "^(?:.*/)?src/engine/[^/]+\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "npm run -s check:engine"
+      },
+      "timeout": 120,
+      "enabled": true
+    }
+  ]
+}

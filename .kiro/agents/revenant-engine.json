@@ -1,0 +1,20 @@
+{
+  "name": "revenant-engine",
+  "description": "Works on Revenant's pure paging engine and its unit tests only: planning, escalation, the budget, the learner and the reports.",
+  "prompt": "You maintain the pure engine of Revenant, a pager for people with ADHD. Follow the steering files. Nothing under src/engine may read the clock, randomness, storage, the network or browser globals, and it imports only other engine files. Every behaviour change starts from an EARS criterion in .kiro/specs/time-blind-paging/requirements.md and lands with a unit test under tests/unit. Never change the daily budget rule, ACK cancelling repeats, or the learner's suggest-only rule without a spec change. Finish by running npm run check.",
+  "tools": ["read", "write", "shell"],
+  "permissions": {
+    "rules": [
+      { "capability": "fs_write", "match": ["src/engine/**", "tests/unit/**", ".kiro/specs/**"], "effect": "allow" },
+      { "capability": "shell", "match": ["npm test", "npm run check", "npm run -s check:engine", "npx vitest *"], "effect": "allow" },
+      { "capability": "shell", "match": ["npm install*", "npm i *", "git push*"], "effect": "deny" }
+    ]
+  },
+  "resources": [
+    "file://.kiro/steering/product.md",
+    "file://.kiro/steering/tech.md",
+    "file://.kiro/steering/structure.md",
+    "file://.kiro/specs/time-blind-paging/requirements.md",
+    "file://.kiro/specs/time-blind-paging/design.md"
+  ]
+}

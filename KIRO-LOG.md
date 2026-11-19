@@ -3,22 +3,30 @@
 How Kiro is used on this project: what is in `.kiro/`, how it was produced, and what is still to come.
 
 ## What is in `.kiro/`
-- **Steering** (`.kiro/steering/`): `product.md` (the thesis, who it is for, the non-negotiable paging rules), `tech.md` (stack, pure-engine rules, the adapter table), `structure.md` (where code lives and the checklist for adding a page kind or an external service). All three use `inclusion: always`.
-- **Spec** (`.kiro/specs/time-blind-paging/`): `requirements.md` with ten requirements and numbered EARS acceptance criteria, `design.md` (architecture, components, data models, algorithms, error handling, testing strategy) and `tasks.md` (a checklist mapped to requirement numbers; 33 tasks, 25 done and 8 open).
+- **Steering** (`.kiro/steering/`): `product.md` (the thesis, who it is for, the evidence, the non-negotiable paging rules), `tech.md` (stack, pure-engine rules, the adapter table), `structure.md` (where code lives and the checklist for adding a page kind or an external service). All three use `inclusion: always`.
+- **Spec** (`.kiro/specs/time-blind-paging/`): `requirements.md` with ten requirements and numbered EARS acceptance criteria, `design.md` (architecture, components, data models, algorithms, error handling, threat model, testing strategy) and `tasks.md` (a checklist mapped to requirement numbers; 37 tasks, 29 done and 8 open).
 - **Hooks** (`.kiro/hooks/`, one `.json` file each in Kiro's current format: `"version": "v1"` and a `hooks` array):
   - `test-on-save.json`: `PostFileSave` on a TypeScript file under `src/` or `tests/unit/`; runs `npm test`.
   - `page-budget-guard.json`: `PostFileSave` on `plan.ts`, `alerts.ts`, `runtime.ts`, `codes.ts` or `learn.ts`; an agent hook that restates the paging rules (page at the action, the daily budget, a pure engine, ACK cancels repeats, the learner only suggests) and asks for a unit test.
+  - `engine-purity-guard.json`: `PostFileSave` on any file under `src/engine/`; runs `npm run check:engine`, a unit test that fails if engine code reads the clock, randomness, storage, the network or browser globals, or imports from outside the engine.
   - `check-on-stop.json`: `Stop`; runs `npm run check` (typecheck and unit tests).
   - `codes-card-sync.json`: `PostFileSave` on `codes.ts`; an agent hook that checks the wallet code card and the README table still match.
+  - `demo-ready.json`: `Manual`; runs `npm run demo:ready`, which builds the site and plays the one-press demo end to end.
+- **Custom agent** (`.kiro/agents/revenant-engine.json`): an agent scoped to the engine, its unit tests and the spec, with the steering files and the spec as resources, write access limited to `src/engine/`, `tests/unit/` and `.kiro/specs/`, and dependency installs and pushes denied.
+- **MCP** (`.kiro/settings/mcp.json`): the AWS Documentation MCP server and Context7, for checking AWS request shapes and library APIs against current documentation.
 
-## How it was produced
-The steering files and the initial spec were drafted before the Kiro pass, in Kiro's spec format, and the build followed `tasks.md` task by task. Each requirement maps to unit tests (Vitest) or end-to-end tests (Playwright), listed in the design's testing strategy.
+## Who did what
+| Part | Produced by |
+|---|---|
+| Steering files, the first spec draft and the first build (engine, pager UI, time machine, .ics import, relay) | Drafted in Kiro's spec format before the Kiro pass, then built task by task from `tasks.md` |
+| EARS rewrite of every acceptance criterion, the task audit and seven new gap tasks | Kiro (the pass below) |
+| The late-ACK learner, the geocoder port, both geocoders, the relay's `/geocode` route and their tests | Kiro (the pass below); one of its own tests caught an ordering bug, which it fixed |
+| Conversion of the four hooks to the current format | Kiro (the pass below) |
+| Running the Playwright suite after the pass | Operator |
+| Relay hardening, sample history and the end-of-day receipt, the before/after strip, the power-on sequence, vibration, the 666 haunting, the purity guard, the custom agent and the MCP configuration | Built after the pass outside Kiro, each recorded as a checked task in `tasks.md` with its requirement numbers |
 
 ## Review fixes
 A clean-clone review found the LCD message clipped on first view, no one-press way into the demo, a copy typo on the code card and no automated test for the service worker. Task 24 in `tasks.md` records the fixes, with new acceptance criteria 6.8, 6.9, 7.5 and 7.6.
-
-## Kiro pass
-Kiro's review of the spec, the two open tasks and the hooks is recorded in the next section.
 
 ## Kiro pass (kiro-cli v3, bonus credits)
 
@@ -80,8 +88,8 @@ The four `.kiro.hook` files (`when` / `then`, `fileEdited`, `agentStop`, `askAge
 
 ### Not done
 - `/geocode` cannot run on the real path: `@aws-sdk/client-geo-places` is not installed and may not be added in this pass, so `lambda.ts` leaves the places client unset and the route answers 501 (task 27).
-- The Playwright suite was not run, so the two new e2e files are untested. Their selectors and times were worked out from the existing tests.
+- The Playwright suite was not run inside the pass. *Resolved after the pass:* the operator ran it and both new end-to-end files pass (see "After the call" above).
 - The geocoding success path inside the app (a real relay answer filling in coordinates) is covered by unit tests of the helpers and the relay geocoder, but not by an end-to-end test, because the default build uses the saved-places geocoder.
 - Imported calendar places without coordinates are not geocoded; only addresses typed on the add form are.
 - Open tasks 14.2 and 28-33 are listed above as gaps, not implemented.
-- I could not check that the hook files load in Kiro, only that they are valid JSON and that their matchers behave as intended in a JavaScript regex test.
+- I could not check that the hook files load in Kiro, only that they are valid JSON and that their matchers behave as intended in a JavaScript regex test. *Still open:* capturing the hooks firing needs a Kiro session.

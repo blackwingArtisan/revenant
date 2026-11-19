@@ -11,7 +11,7 @@ inclusion: always
 - Deploy target (free): static hosting (Cloudflare Pages or any static host) for the PWA. The optional relay is one AWS Lambda function behind a Function URL. Nothing is deployed from this repository.
 
 ## Engine rules
-- `src/engine` is pure: no I/O, no `Date.now()`, no randomness. Time comes in as epoch milliseconds.
+- `src/engine` is pure: no I/O, no `Date.now()`, no randomness. Time comes in as epoch milliseconds. Enforced by `tests/unit/purity.test.ts` (`npm run check:engine`), which the engine-purity hook runs on every engine save.
 - All instants are epoch ms. Wall-clock values exist only at the edges (day boundaries, digest time, calendar import) and are converted with `Intl` in the user's IANA time zone (`src/engine/time.ts`). Lead times are subtracted in real minutes, so daylight-saving changes never shift a page.
 - Page ids are stable (`<commitment>:<kind>`), so a re-plan keeps acknowledgements and the budget slot of a page that already beeped.
 

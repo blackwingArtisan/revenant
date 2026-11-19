@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Demo ready",
+      "description": "Run before recording or presenting: build the production site and play the one-press demo end to end (sample day, learner card, receipt).",
+      "trigger": "Manual",
+      "action": {
+        "type": "command",
+        "command": "npm run -s demo:ready"
+      },
+      "timeout": 600,
+      "enabled": true
+    }
+  ]
+}

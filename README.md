@@ -146,17 +146,24 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-155 unit tests (Vitest) and 25 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
+170 unit tests (Vitest) and 25 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
 
 <details>
 <summary><strong>What the tests cover</strong></summary>
 
-- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history, end-of-day report and 666 haunting, the before/after comparison, the power-on timeline and the vibration rhythm, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
+- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history, end-of-day report and 666 haunting, the before/after comparison, engine purity (no clock, randomness, storage, network or outside imports in `src/engine`), the power-on timeline and the vibration rhythm, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
 - **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`, its RIP stamp and the end-of-day haunting that ACK lays to rest; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the power-on sequence frame by frame, and skipped under reduced motion; vibration in the chirp's rhythm; field-level form errors; the demo button above the fold at 390 px; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
 </details>
 
 ## Built with Kiro
-Revenant is specified and steered in Kiro's format. See [`/.kiro`](.kiro) for the steering files (product, tech, structure), the `time-blind-paging` spec (EARS requirements, design, tasks) and the hooks (`.kiro/hooks/*.json`: unit tests on save, a paging-rules guard, a code-card check and a typecheck on stop), and [`KIRO-LOG.md`](KIRO-LOG.md) for how they were produced and used.
+Revenant is specified and steered in Kiro's format. In [`/.kiro`](.kiro):
+- **Steering:** product, tech and structure, always included.
+- **Spec:** `time-blind-paging`, with EARS requirements, a design with a threat model, and a task list mapped to requirement numbers.
+- **Hooks** (`.kiro/hooks/*.json`): unit tests on save, a paging-rules guard, an engine-purity guard, a code-card check, a typecheck on stop, and a manual "demo ready" run of the end-to-end demo.
+- **Custom agent:** `revenant-engine`, limited to the engine, its tests and the spec.
+- **MCP:** the AWS Documentation server and Context7 in `.kiro/settings/mcp.json`.
+
+[`KIRO-LOG.md`](KIRO-LOG.md) records how each part was produced, including the Kiro session that wrote the late-ACK learner and the geocoder, and who did what.
 
 ## Credits
 Fonts are self-hosted through Fontsource: VT323, Big Shoulders Display, IBM Plex Mono and Monoton under the SIL Open Font License 1.1, and Special Elite under the Apache License 2.0. Runtime: React (MIT). AWS SDK for JavaScript v3 (Apache 2.0) is an optional dependency used only by the relay.
