@@ -9,7 +9,7 @@ import { nextAlertAt, pageStatus } from '../engine/alerts';
 import { parseIcs } from '../engine/ics';
 import { icsToCommitments, mergeCommitments } from '../engine/importer';
 import { planDays } from '../engine/plan';
-import { acknowledge, activePages, emptyRuntimeState, pinnedPageIds, rewind, tick, type RuntimeState } from '../engine/runtime';
+import { acknowledge, activePages, emptyRuntimeState, firstDueBetween, pinnedPageIds, rewind, tick, type RuntimeState } from '../engine/runtime';
 import { defaultSettings, sampleDay, SAMPLE_PLACES } from '../engine/sample';
 import { addDays, DAY, HOUR, isValidTimeZone, localDayKey, parseDayKey, startOfDay, zonedToEpoch } from '../engine/time';
 import type { Commitment, PageStatus, Place, PlannedPage, Settings } from '../engine/types';
@@ -126,6 +126,13 @@ export function usePager() {
   const stopRef = useRef(stopOnBeep);
   stopRef.current = stopOnBeep;
   const travelCache = useRef(new Map<string, number | null>());
+  // True while "Run the day" is in charge of the clock: ACK on a page it stopped at resumes the run.
+  const dayRunRef = useRef(false);
+  const [dayRun, setDayRunState] = useState(false);
+  const setDayRun = useCallback((on: boolean) => {
+    dayRunRef.current = on;
+    setDayRunState(on);
+  }, []);
 
   const tz = settings.timeZone;
   const dayKey = localDayKey(now, tz);
@@ -154,12 +161,19 @@ export function usePager() {
   );
 
   // The pager loop: deliver whatever has come due.
+  const lastTickRef = useRef(now);
   useEffect(() => {
-    const r = tick(plan.pages, runtimeRef.current, now);
+    let at = now;
+    if (stopRef.current && clock.speed > 1) {
+      // A fast clock covers several minutes per tick: stop on the first page in that step.
+      at = firstDueBetween(plan.pages, runtimeRef.current, lastTickRef.current, now) ?? now;
+    }
+    lastTickRef.current = at;
+    const r = tick(plan.pages, runtimeRef.current, at);
     if (r.state === runtimeRef.current) return;
     setRuntime(r.state);
     if (r.fresh.length === 0) return;
-    const received = r.fresh.map((a) => ({ ...a, receivedAt: now }));
+    const received = r.fresh.map((a) => ({ ...a, receivedAt: at }));
     setMemory((m) => [...received.reverse(), ...m].slice(0, MEMORY_SIZE));
     setReadIndex(null);
     const loud = r.fresh.filter((a) => !a.silent);
@@ -215,6 +229,10 @@ export function usePager() {
       setReadIndex(null);
       setAnnouncement('Page acknowledged.');
       void adapters.channel.withdraw(target).catch(() => undefined);
+      if (dayRunRef.current && clock.speed === 0) {
+        clock.setSpeed(900);
+        setSpeedState(900);
+      }
     },
     [plan, clock, setRuntime],
   );
@@ -251,6 +269,7 @@ export function usePager() {
 
   const controls = {
     speed,
+    dayRun,
     stopOnBeep,
     setStopOnBeep,
     advance: (ms: number) => travelTo(clock.now() + ms),
@@ -262,20 +281,29 @@ export function usePager() {
     },
     setSpeed: (n: number) => {
       unlockAudio();
+      setDayRun(false);
       clock.setSpeed(n);
       setSpeedState(n);
     },
     backToNow: () => {
+      setDayRun(false);
       travelTo(Date.now());
       clock.backToNow();
       setSpeedState(1);
     },
     runDay: () => {
       travelTo(startOfDay(dayKey, tz) + 6 * HOUR);
+      setDayRun(true);
       setStopOnBeep(true);
       clock.setSpeed(900);
       setSpeedState(900);
     },
+  };
+
+  /** One-press demo: load the sample day if the pager is empty, then run it from 6 AM. */
+  const demoDay = () => {
+    if (commitments.length === 0) setCommitments((list) => mergeCommitments(list, sampleDay(dayKey, tz)));
+    controls.runDay();
   };
 
   const addCommitment = useCallback((c: NewCommitment) => {
@@ -366,6 +394,7 @@ export function usePager() {
     travel,
     next: nextAlertAt(plan.pages, runtime.acks, now),
     controls,
+    demoDay,
     ack,
     read,
     statusOf,

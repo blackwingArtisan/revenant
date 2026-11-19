@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { BOOT_CODE, MISSED_CODE } from '../../engine/codes';
 import { lcdClock, readableClock } from '../../engine/time';
 import type { PagerApi } from '../usePager';
@@ -26,6 +26,40 @@ function Battery() {
       <path d="M1 1h17v8H1Z" fill="none" stroke="currentColor" strokeWidth="1.4" />
       <path d="M19 3.5h2v3h-2Z M3 3h4v4H3Z M8 3h4v4H8Z M13 3h3v4h-3Z" fill="currentColor" />
     </svg>
+  );
+}
+
+/**
+ * The message line. Text that fits sits still; a longer message shows its
+ * start first, holds, then scrolls to its end like a pager's LCD.
+ */
+function Ticker({ text }: { text: string }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(0);
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    const line = textRef.current;
+    if (!box || !line) return;
+    const measure = () => setOverflow(Math.max(0, Math.ceil(line.scrollWidth - box.clientWidth)));
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    ro.observe(line);
+    return () => ro.disconnect();
+  }, [text]);
+  const scrolls = overflow > 2;
+  // About 45 px a second while moving; the moving part is 60% of the loop.
+  const style = scrolls
+    ? ({ '--ticker-shift': `-${overflow}px`, '--ticker-time': `${Math.max(5, overflow / 45 / 0.6).toFixed(1)}s` } as CSSProperties)
+    : undefined;
+  return (
+    <div ref={boxRef} className="lcd-ticker" data-scroll={scrolls ? 'true' : undefined} style={style}>
+      <span key={text} ref={textRef} className="lcd-text" data-testid="lcd-text">
+        {text}
+      </span>
+    </div>
   );
 }
 
@@ -121,11 +155,7 @@ export function Pager({ pager }: { pager: PagerApi }) {
                 {corner}
               </span>
             </div>
-            <div className="lcd-ticker">
-              <span className="lcd-text" data-testid="lcd-text">
-                {text}
-              </span>
-            </div>
+            <Ticker text={text} />
           </div>
         </div>
         <div className="pager-buttons">

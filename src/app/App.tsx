@@ -72,6 +72,19 @@ export default function App() {
         <p className="tagline">
           The pager, back from the dead for ADHD brains. It only goes off when you need to <em>act</em>.
         </p>
+        <div className="hero">
+          <button type="button" className="cta" onClick={pager.demoDay} data-testid="demo-cta">
+            <span className="cta-led" aria-hidden="true" />
+            Watch a day in about a minute
+          </button>
+          <p className="why">
+            About 15.5 million US adults, 1 in 16, have a current ADHD diagnosis (
+            <a href="https://www.cdc.gov/mmwr/volumes/73/wr/mm7340a1.htm" rel="noreferrer">
+              CDC, 2024
+            </a>
+            ). The calendar is rarely the problem. The moment to stand up is.
+          </p>
+        </div>
       </header>
 
       <main className="layout">

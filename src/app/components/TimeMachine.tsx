@@ -69,6 +69,11 @@ export function TimeMachine({ pager }: { pager: PagerApi }) {
           Back to now
         </button>
       </div>
+      {controls.dayRun && controls.speed === 0 && (
+        <p className="vcr-hint" data-testid="vcr-hint">
+          Stopped on a page. Press ACK to keep the day running.
+        </p>
+      )}
       <label className="vcr-check">
         <input type="checkbox" checked={controls.stopOnBeep} onChange={(e) => controls.setStopOnBeep(e.target.checked)} />
         Pause when the pager goes off

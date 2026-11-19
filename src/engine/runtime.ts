@@ -18,6 +18,18 @@ export interface TickResult {
 export const emptyRuntimeState = (): RuntimeState => ({ acks: {}, delivered: [] });
 
 /**
+ * The earliest undelivered alert in (from, to], or null. A fast clock covers
+ * minutes between two ticks; the app ticks here first, so a page is shown at
+ * its own minute instead of being merged with repeats that came due later.
+ */
+export function firstDueBetween(pages: readonly PlannedPage[], state: RuntimeState, from: number, to: number): number | null {
+  if (to <= from) return null;
+  const delivered = new Set(state.delivered);
+  const next = alertsUpTo(pages, state.acks, to).find((a) => a.at > from && !delivered.has(a.id));
+  return next ? next.at : null;
+}
+
+/**
  * Advance the pager to `now`. Pure: returns the next state instead of
  * mutating. When the clock jumps (time travel, or the tab slept), several
  * repeats of one page may be due at once; only the latest one beeps.

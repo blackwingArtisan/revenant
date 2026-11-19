@@ -9,6 +9,10 @@ Kiroween 2026, category **Resurrection**.
 ## Who it is for
 Adults with ADHD and anyone with time blindness. The problem is rarely forgetting the appointment; it is that "dentist at 10:30" never turns into "stand up now". Phone reminders fire when the event *starts*, all at the same volume as a hundred other notifications, and get swiped away. A pager was trusted because it was almost always silent.
 
+**Why it matters**
+- About 15.5 million US adults, 1 in 16, reported a current ADHD diagnosis in 2023, and more than half were diagnosed as adults ([CDC, *MMWR* 73(40), 2024](https://www.cdc.gov/mmwr/volumes/73/wr/mm7340a1.htm)).
+- Across 105 studies, the average appointment no-show rate is about 23% ([Dantas et al., *Health Policy* 122(4), 2018](https://ideas.repec.org/a/eee/hepoli/v122y2018i4p412-421.html)). Every missed slot costs the clinic the hour and the patient the care.
+
 ## What works today
 - **Pages at the moment to act.** Leave-now = start - travel - buffer. Get-ready = leave-now - prep x an honesty factor (default x1.5, because "10 minutes" is never 10 minutes).
 - **Travel from where you will be.** Straight-line distance at a per-mode speed, chained from the previous appointment if it ends within three hours, else from home. Video calls say `JOIN` with no travel.
@@ -18,6 +22,8 @@ Adults with ADHD and anyone with time blindness. The problem is rarely forgettin
 - **Calendar import.** Drop an .ics file: UTC, TZID and floating times, all-day events, DAILY/WEEKLY/MONTHLY rules with INTERVAL, COUNT, UNTIL, EXDATE and RECURRENCE-ID, cancelled events, Windows time-zone names, GEO. Locations match saved places; video links become online. Re-import updates in place and keeps your tuned prep times.
 - **Time zones done properly.** All math is in elapsed minutes; days, labels and the digest follow your IANA zone, including 23- and 25-hour DST days.
 - **Time machine.** Pause, +5/+15/+60 min, jump to the next page, 1x/60x/900x, and "Run the day from 6 AM", which stops on the exact minute a page fires. Travelling back replays the day exactly.
+- **One-press demo.** "Watch a day in about a minute" loads the sample day if the pager is empty and runs it from 6 AM at 900x. It stops on each page; ACK keeps the day running.
+- **A readable LCD.** A message that fits sits still. A longer one shows its start, holds, scrolls to its end and repeats.
 - **Lock-screen pages.** With notifications allowed, the service worker shows each page with an ACK action that acknowledges it in the app.
 - **Accessible.** Every page is announced through an assertive live region; all controls work from the keyboard (A = ACK, R = READ, M = mute, N = next page); visible focus; zero axe-core WCAG 2.1 A/AA violations in the end-to-end suite; `prefers-reduced-motion` gives a still pager. On a phone, a docked mini pager with a large ACK button appears when the device is scrolled away.
 - **Offline and private.** The service worker caches the app shell for offline use. Everything stays in this browser's storage.
@@ -44,7 +50,7 @@ npm run dev        # http://localhost:3150
 
 Demo switches: `/?sample` loads an invented sample day, `?at=2026-11-19T06:00` starts the clock paused at that wall time, `?tz=America/Chicago` sets the zone, `?speed=900` runs fast, `?fresh` clears saved state.
 
-A one-minute demo: open `/?sample&at=2026-11-19T06:00&tz=America/Chicago`, press **Run the day from 6 AM**, and press **ACK** (or `A`) each time it stops on a page.
+A one-minute demo: open the app and press **Watch a day in about a minute**, then press **ACK** (or `A`) each time it stops on a page.
 
 Production build: `npm run build` writes a static site to `dist/`; `npm run preview` serves it on port 3151.
 
@@ -55,8 +61,8 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-- **Unit (Vitest, 89 tests):** time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay against stub AWS clients.
-- **End to end (Playwright, 12 tests):** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion.
+- **Unit (Vitest, 93 tests):** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay against stub AWS clients.
+- **End to end (Playwright, 16 tests):** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the one-press demo day; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
 
 ## Architecture
 ```
@@ -88,6 +94,9 @@ See `.env.example` for every setting and `docs/real-path.md` for the relay's end
 
 ## Built with Kiro
 Revenant is specified and steered in Kiro's format. See [`/.kiro`](.kiro) for the steering files (product, tech, structure), the `time-blind-paging` spec (EARS requirements, design, tasks) and the agent hooks, and [`KIRO-LOG.md`](KIRO-LOG.md) for how they were produced and used.
+
+## Credits
+Fonts are self-hosted through Fontsource: VT323, Big Shoulders Display, IBM Plex Mono and Monoton under the SIL Open Font License 1.1, and Special Elite under the Apache License 2.0. Runtime: React (MIT). AWS SDK for JavaScript v3 (Apache 2.0) is an optional dependency used only by the relay.
 
 ## License
 MIT, Stubborn Otter Software. All names, places and phone numbers in the sample data are invented.

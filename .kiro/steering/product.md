@@ -10,6 +10,11 @@ inclusion: always
 ## Who it is for
 Adults with ADHD (and anyone with time blindness) who miss appointments not because they forgot, but because "the appointment is at 10:30" never turns into "stand up now". Parents juggling pickups. Freelancers whose day is a string of calls and errands. People who have tried every reminder app and learned to swipe them all away.
 
+## Why it matters
+- About 15.5 million US adults, 1 in 16, reported a current ADHD diagnosis in 2023, and more than half of them were diagnosed as adults (CDC, *MMWR* 73(40), 2024).
+- Missed appointments are expensive and common: a review of 105 studies put the average no-show rate across specialties at about 23% (Dantas et al., *Health Policy* 122(4), 2018).
+- Revenant targets the gap between knowing about an appointment and leaving for it. It does not claim to treat ADHD.
+
 ## What Revenant does
 1. **Pages at the moment to act.** For each commitment it computes a get-ready page (411) and a leave-now page (911) from travel time, a buffer, and the user's own honest prep time.
 2. **Corrects for time blindness.** Stated prep time is multiplied by an honesty factor (default x1.5). Travel is estimated from the place the user will actually be, including the previous appointment.

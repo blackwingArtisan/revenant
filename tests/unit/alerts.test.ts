@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { alertsUpTo, nextAlertAt, pageStatus } from '../../src/engine/alerts';
 import { planDays } from '../../src/engine/plan';
-import { acknowledge, activePages, alertTime, emptyRuntimeState, pinnedPageIds, rewind, tick } from '../../src/engine/runtime';
+import { acknowledge, activePages, alertTime, emptyRuntimeState, firstDueBetween, pinnedPageIds, rewind, tick } from '../../src/engine/runtime';
 import { appt, at, M, PLACES, settings } from './helpers';
 
 const DAY = '2026-11-19';
@@ -60,6 +60,16 @@ describe('runtime', () => {
     const r = tick(pages(), emptyRuntimeState(), leaveAt + 7 * M);
     expect(r.fresh.map((a) => a.code)).toEqual(['911 911 911']);
     expect(r.state.delivered).toHaveLength(3);
+  });
+
+  it('finds the first undelivered alert in a fast-clock step, so a run stops on the first beep', () => {
+    // A 7-minute step covers the page and two repeats; the run must stop at the first one.
+    expect(firstDueBetween(pages(), emptyRuntimeState(), leaveAt - M, leaveAt + 7 * M)).toBe(leaveAt);
+    const r = tick(pages(), emptyRuntimeState(), leaveAt);
+    expect(r.fresh.map((a) => a.code)).toEqual(['911']);
+    expect(firstDueBetween(pages(), r.state, leaveAt, leaveAt + 7 * M)).toBe(leaveAt + 3 * M);
+    expect(firstDueBetween(pages(), acknowledge(r.state, 'd:leave-now', leaveAt), leaveAt, leaveAt + 7 * M)).toBeNull();
+    expect(firstDueBetween(pages(), emptyRuntimeState(), leaveAt + M, leaveAt)).toBeNull();
   });
 
   it('ACK cancels the escalation', () => {

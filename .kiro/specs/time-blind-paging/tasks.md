@@ -31,5 +31,11 @@
   - [x] 22.1 Accessibility: axe-core WCAG 2.1 A/AA scan while paging, reduced-motion check (Req 6.2, 6.6)
 - [x] 23. Relay schedule sync from the app: send future beeps to `/schedule` on plan change when `VITE_CHANNEL=relay`, withdraw moved or removed pages, never from the time machine (Req 8.4)
   - [x] 23.1 Unit tests for the schedule diff, the channel's `/schedule` call, and the relay replacing an existing schedule
-- [ ] 24. Learn from late ACKs: suggest a larger prep time when leave-now pages are often acknowledged at level 2 or later
-- [ ] 25. Geocoding for typed addresses through Amazon Location Service Places, behind the travel adapter
+- [x] 24. First-impression fixes from the clean-clone review
+  - [x] 24.1 LCD message shows its start, holds, then scrolls only when it overflows (Req 6.8)
+  - [x] 24.2 "Watch a day in about a minute" button above the fold; ACK resumes a paused day run (Req 7.5, 7.6)
+  - [x] 24.3 End-to-end tests for the service worker: notification with an ACK action relayed to the app, and the offline shell (Req 6.4, 6.9)
+  - [x] 24.4 Wallet card headings end in exactly one stop, with a unit test
+  - [x] 24.5 A fast run stops on the first page in a clock step, not on a repeat that came due later in the same step (Req 7.2)
+- [ ] 25. Learn from late ACKs: suggest a larger prep time when leave-now pages are often acknowledged at level 2 or later
+- [ ] 26. Geocoding for typed addresses through Amazon Location Service Places, behind the travel adapter

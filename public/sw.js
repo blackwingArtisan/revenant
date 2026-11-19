@@ -38,17 +38,24 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+/**
+ * Tapping a lock-screen page: the ACK action acknowledges it in every open
+ * Revenant window; any tap brings the pager to the front.
+ */
+function handleNotificationClick(notification, action) {
+  const pageId = notification.data && notification.data.pageId;
+  notification.close();
+  return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    if (action === 'ack' && pageId) {
+      for (const c of clients) c.postMessage({ type: 'ack', pageId });
+    }
+    const open = clients[0];
+    if (open) return open.focus().catch(() => open);
+    return self.clients.openWindow('/');
+  });
+}
+self.handleNotificationClick = handleNotificationClick;
+
 self.addEventListener('notificationclick', (event) => {
-  const pageId = event.notification.data && event.notification.data.pageId;
-  event.notification.close();
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      if (event.action === 'ack' && pageId) {
-        for (const c of clients) c.postMessage({ type: 'ack', pageId });
-      }
-      const open = clients[0];
-      if (open) return open.focus();
-      return self.clients.openWindow('/');
-    }),
-  );
+  event.waitUntil(handleNotificationClick(event.notification, event.action));
 });

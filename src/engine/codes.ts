@@ -30,6 +30,12 @@ export const CODE_CARD: CodeEntry[] = [
   { code: '07734', meaning: 'hELLO', detail: 'Turn the pager upside down.' },
 ];
 
+/** The bold lead-in on a card row: the meaning, ending in exactly one stop. */
+export function cardHeading(meaning: string): string {
+  const m = meaning.trim();
+  return /[.?!]$/.test(m) ? m : `${m}.`;
+}
+
 /** Escalation repeats the code, like a 1990s "911 911 911" page. */
 export function escalatedCode(code: string, level: number): string {
   const repeats = Math.min(level + 1, 3);

@@ -1,4 +1,4 @@
-import { CODE_CARD } from '../../engine/codes';
+import { cardHeading, CODE_CARD } from '../../engine/codes';
 
 export function CodeCard() {
   return (
@@ -12,7 +12,7 @@ export function CodeCard() {
           <div key={c.code} className="card-row">
             <dt>{c.code}</dt>
             <dd>
-              <strong>{c.meaning}.</strong> {c.detail}
+              <strong>{cardHeading(c.meaning)}</strong> {c.detail}
             </dd>
           </div>
         ))}

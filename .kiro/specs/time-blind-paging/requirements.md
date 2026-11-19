@@ -68,13 +68,15 @@ Revenant pages a person with ADHD only when they need to act: get ready, leave, 
 ## Requirement 6: The pager
 **User story:** As a user, I want a device that looks and behaves like a pager, so that a page is unmistakable.
 
-6.1 WHEN a page beeps THE SYSTEM SHALL light the LCD, show the code and scrolling text, blink the LED, play a synthesized chirp (unless muted) and vibrate where supported.
+6.1 WHEN a page beeps THE SYSTEM SHALL light the LCD, show the code and its text, blink the LED, play a synthesized chirp (unless muted) and vibrate where supported.
 6.2 THE SYSTEM SHALL announce every page to assistive technology through a live region.
 6.3 THE SYSTEM SHALL provide ACK, READ (message memory) and MUTE buttons, also on the keys A, R and M.
 6.4 WHEN notifications are allowed THE SYSTEM SHALL show each beeping page as a lock-screen notification with an ACK action that acknowledges the page in the app.
 6.5 WHEN a page is beeping and the pager is scrolled out of view THE SYSTEM SHALL show a docked mini pager with an ACK button.
 6.6 WHERE the user prefers reduced motion THE SYSTEM SHALL show pages without shaking, blinking or scrolling text.
 6.7 THE SYSTEM SHALL keep commitments, places, settings, acknowledgements and message memory across reloads on the same device.
+6.8 WHEN the LCD shows a message THE SYSTEM SHALL show its first word at the left edge; IF the message is wider than the LCD THEN THE SYSTEM SHALL hold, scroll to its end and repeat, and otherwise keep it still.
+6.9 WHEN the app has been loaded once THE SYSTEM SHALL open from the service worker cache while offline.
 
 ## Requirement 7: Time machine
 **User story:** As a presenter or tester, I want to drive the clock, so that a whole day can be shown in a minute.
@@ -83,6 +85,8 @@ Revenant pages a person with ADHD only when they need to act: get ready, leave, 
 7.2 WHEN the clock runs faster than real time and a page fires THE SYSTEM SHALL pause at the exact page time (option on by default).
 7.3 WHEN the user travels back in time THE SYSTEM SHALL forget beeps and ACKs that had not happened yet, so the day replays exactly.
 7.4 THE SYSTEM SHALL accept `?at=`, `?speed=`, `?tz=`, `?sample` and `?fresh` URL switches for demos and tests.
+7.5 THE SYSTEM SHALL offer one control above the fold that runs a demo day: it loads the sample day if the pager is empty and runs the day from 6 AM at 900x.
+7.6 WHILE a day run is paused on a page WHEN the user presses ACK THE SYSTEM SHALL resume the run at 900x.
 
 ## Requirement 8: Adapters and the real path
 **User story:** As an operator, I want real routing and SMS behind the same interfaces, so that the free local demo and the production path share all logic.
