@@ -2,16 +2,16 @@
   "mcpServers": {
     "aws-docs": {
       "command": "uvx",
-      "args": ["awslabs.aws-documentation-mcp-server@latest"],
+      "args": ["awslabs.aws-documentation-mcp-server@1.2.4"],
       "env": { "FASTMCP_LOG_LEVEL": "ERROR" },
       "disabled": false,
-      "autoApprove": []
+      "autoApprove": ["read_documentation", "search_documentation", "recommend"]
     },
     "context7": {
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "args": ["-y", "@upstash/context7-mcp@4.5.0"],
       "disabled": false,
-      "autoApprove": []
+      "autoApprove": ["resolve-library-id", "get-library-docs"]
     }
   }
 }
