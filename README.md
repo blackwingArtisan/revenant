@@ -2,7 +2,7 @@
 
 **The 1990s pager, back from the dead for ADHD brains. It stays silent all day and goes off only at the moment you have to act.**
 
-<!-- Hero GIF: docs/media/demo.gif (the one-press demo: 411, 911, 911 911, ACK). -->
+![The one-press demo: the pager runs a sample day at 900x, stops on the quiet digest, then on 911 and 411 pages, and each ACK keeps the day running.](docs/media/demo.gif)
 
 **Live app** · **Demo video** · **Devpost**: links are added when the entry is submitted. Until then: `npm ci && npm run dev`.
 
@@ -13,6 +13,14 @@
 - **Repeats until you ACK.** `911 911`, then `NOW!!`, and it learns from the pages you answer late.
 
 **Kiroween 2026, category Resurrection.** *What died:* the pager, a device that was trusted because it was almost always silent. *What came back:* its behaviour, not just its look: numeric codes, a strict silence budget, repeats until ACK, and pages you ignore coming back to haunt you as `666`.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/media/desktop.png" alt="Desktop first screen mid-page: the pager shows 911 911 911 with the screen edges glowing ember, next to the before/after strip and the day sheet with its red now-line."></td>
+    <td width="22%"><img src="docs/media/phone.png" alt="On a phone, a docked mini pager with a large ACK button appears when the pager is scrolled out of view."></td>
+    <td width="28%"><img src="docs/media/haunting.png" alt="After the day ends with pages missed, the pager shows one silent 666 recap: HAUNTING, with the LCD ghost doubled behind the digits."><br><img src="docs/media/learner.png" alt="The learner's card on the day sheet: You often ACK this one late. Try 40 min prep instead of 30, with Apply and Dismiss."></td>
+  </tr>
+</table>
 
 ## One morning, before and after
 Maya, 34, is an illustrative persona, not a real user. Dentist at 10:30 AM, 22 minutes away; she says getting ready takes 20 minutes. The times below are computed by the engine (`src/engine/compare.ts`, checked in `tests/unit/compare.test.ts`) and shown in the app above the day sheet.
@@ -140,6 +148,8 @@ Demo switches: `?boot` plays the power-on sequence, `/?sample` loads an invented
 
 Production build: `npm run build` writes a static site to `dist/`; `npm run preview` serves it on port 3151. The PWA is a static site and can be served from Cloudflare Pages or any static host.
 
+Media: with the preview running, `node scripts/capture-media.mjs http://localhost:3151` recaptures `docs/media/` and the social card `public/og.png` (the GIF needs ffmpeg).
+
 ## Test it
 ```sh
 npm run check      # TypeScript typecheck + Vitest unit tests
@@ -147,13 +157,13 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-173 unit tests (Vitest) and 26 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
+173 unit tests (Vitest) and 27 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
 
 <details>
 <summary><strong>What the tests cover</strong></summary>
 
 - **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history, end-of-day report and 666 haunting, the before/after comparison, engine purity (no clock, randomness, storage, network or outside imports in `src/engine`), the power-on timeline, the vibration rhythm, the DST-correct day bar, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
-- **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`, its RIP stamp and the end-of-day haunting that ACK lays to rest; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the power-on sequence frame by frame, and skipped under reduced motion; vibration in the chirp's rhythm; field-level form errors; the demo button above the fold at 390 px; the day bar's playhead, the now-line and the ember edge on a loud `911`; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
+- **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`, its RIP stamp and the end-of-day haunting that ACK lays to rest; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the power-on sequence frame by frame, and skipped under reduced motion; vibration in the chirp's rhythm; field-level form errors; the demo button above the fold at 390 px; the day bar's playhead, the now-line and the ember edge on a loud `911`; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; the app shell opening offline; and the 1200 x 630 social card behind the link preview.
 </details>
 
 ## Built with Kiro

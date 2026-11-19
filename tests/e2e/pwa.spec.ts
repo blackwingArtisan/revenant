@@ -63,3 +63,15 @@ test('the app shell loads offline once the service worker has cached it', async 
   await expect(page.locator('.pager')).toBeVisible();
   await context.setOffline(false);
 });
+
+test('link previews get a 1200 x 630 social card', async ({ page, request }) => {
+  await page.goto('/?fresh');
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  const image = await page.locator('meta[property="og:image"]').getAttribute('content');
+  const res = await request.get(image!);
+  expect(res.status()).toBe(200);
+  expect(res.headers()['content-type']).toContain('image/png');
+  const png = await res.body();
+  // PNG header: width and height are big-endian at bytes 16-23.
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+});
