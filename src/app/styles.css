@@ -266,10 +266,6 @@ kbd {
   color: var(--ink);
   font-size: 15px;
 }
-.why--then {
-  color: var(--muted);
-  font-size: 13px;
-}
 .why a {
   color: var(--ink);
 }
@@ -1009,6 +1005,16 @@ kbd {
 }
 
 /* ---------- Before and after: one illustrative morning ---------- */
+.ba-cite {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.ba-cite a {
+  color: var(--ink);
+}
 .ba {
   padding: 14px 16px;
   border: 1px solid var(--line);

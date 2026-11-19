@@ -49,6 +49,14 @@ export function BeforeAfter({ pager }: { pager: PagerApi }) {
           </p>
         </div>
       </div>
+      <p className="ba-cite" data-testid="neuropage">
+        It worked before: in the NeuroPage trial, more than 80% of the people who finished it, most of them living with a brain injury, managed everyday tasks
+        better with a pager (
+        <a href="https://doi.org/10.1136/jnnp.70.4.477" rel="noreferrer">
+          Wilson et al., 2001
+        </a>
+        ). Phones buried it. We dug it up.
+      </p>
     </section>
   );
 }
