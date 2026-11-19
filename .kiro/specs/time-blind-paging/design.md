@@ -8,17 +8,19 @@ Revenant is a static PWA. All paging logic is a pure engine in `src/engine`; the
  .ics file -> ics.ts -> importer.ts --+                               |
  Add form  ---------------------------+-> commitments                 |
                                           |                           |
+ Geocoder (saved places | relay) --> place coordinates                  |
  TravelEstimator (straight-line | relay) -> resolveTravel -> minutes   |
                                           v                           |
  settings + clock(now) -----------> planDays (pure) -> Plan (pages)   |
                                           v                           |
                          tick(plan, runtimeState, now) -> fresh alerts |
+                         suggestPrepTimes(pages, acks, now) -> advice  |
                                           v                           |
            LCD + chirp + live region      PagerChannel.deliver(alert) |
            ACK -> acknowledge()           (notification | relay SMS)  |
             +-----------------------------------------|---------------+
                                                       v
-                       relay (Lambda): CalculateRoutes | SendTextMessage | CreateSchedule/DeleteSchedule
+                       relay (Lambda): CalculateRoutes | Geocode | SendTextMessage | CreateSchedule/DeleteSchedule
 ```
 
 ## Components
@@ -28,13 +30,15 @@ Revenant is a static PWA. All paging logic is a pure engine in `src/engine`; the
 | Planner | `src/engine/plan.ts` | Candidate pages per commitment, budget ranking, digest, body double |
 | Escalation | `src/engine/alerts.ts` | Alerts up to an instant, page status, next alert time |
 | Runtime | `src/engine/runtime.ts` | Deliver-once ticking, coalescing, ACK, rewind |
+| Learner | `src/engine/learn.ts` | Suggests a longer prep time for routines whose leave-now page is usually ACK'd late. Pure and advisory |
 | Calendar | `src/engine/ics.ts`, `importer.ts` | RFC 5545 subset, recurrence, place matching, merge |
 | Clock | `src/adapters/clock.ts` | `SimClock`: pause, jump, speed |
 | Travel | `src/adapters/travel.ts`, `resolve-travel.ts` | Port, straight-line and relay estimators, route cache |
+| Geocoder | `src/adapters/geocode.ts` | Port, saved-places and relay geocoders, typed-address helpers |
 | Channel | `src/adapters/channel.ts` | Port, browser notifications, relay SMS, memory |
 | Store | `src/adapters/storage.ts` | Guarded localStorage snapshot |
-| Relay | `src/relay/handler.ts`, `lambda.ts` | Location routes, SMS, Scheduler, shared-secret check |
-| App | `src/app/*` | Pager, time machine, day sheet, forms, service worker |
+| Relay | `src/relay/handler.ts`, `lambda.ts` | Location routes, Places geocoding, SMS, Scheduler, shared-secret check |
+| App | `src/app/*` | Pager, time machine, day sheet, prep suggestions, forms, service worker |
 
 ## Data models
 ```ts
@@ -46,7 +50,10 @@ interface PlannedPage { id; commitmentId; kind; code; text; fireAt; escalateAt: 
   silent; countsToBudget; priority; dayKey }
 interface Alert { id: `${pageId}#${level}`; pageId; level; at; code; text; silent }
 interface RuntimeState { acks: Record<pageId, epochMs>; delivered: alertId[] }
+interface PrepSuggestion { routineKey; commitmentId; commitmentIds; title; currentPrepMinutes; suggestedPrepMinutes; lateCount; sampled }
+interface Geocoder { readonly name: string; geocode(address): Promise<{ lat; lon; label } | null> }
 ```
+The stored snapshot gains an optional `prepAdvice: { dismissed: routineKey[]; since: Record<routineKey, epochMs> }`, so snapshots saved earlier still load.
 
 ## Key algorithms
 **Lead times.** `leave = start - (travel + buffer)`, `ready = leave - round(prep x honesty)`. Arithmetic is on epoch ms, so DST never shifts a page; only labels are converted to wall time.
@@ -59,6 +66,22 @@ interface RuntimeState { acks: Record<pageId, epochMs>; delivered: alertId[] }
 
 **Remote schedule sync.** `diffSchedules(sent, pages, acks, now)` keeps a signature of each page's full beep run. Unchanged pages send nothing; a page whose signature changed is withdrawn and its future beeps scheduled again; a page gone from the plan is withdrawn. The relay replaces a schedule on name conflict, so re-sending after a reload is safe.
 
+**Learning from late ACKs (Req 9).** `suggestPrepTimes({ pages, commitments, acks, settings, now, ignoreBefore })` is a pure function that returns suggestions and changes nothing.
+- *Routine.* A commitment has exactly one leave-now page, so there is no history inside one commitment. Commitments with the same normalized title at the same place form a routine, and the learner reads that history. A weekly calendar event or an errand typed again each week is one routine.
+- *Level of an ACK.* The level is the number of the page's repeats due at or before the ACK time, before the cutoff. An ACK at the very instant of a repeat counts as answering that repeat, because the pager delivers a due repeat before the person can press ACK. An ACK at or after the cutoff counts as late.
+- *Outcome.* Each leave-now page is acknowledged on time (level 0), late (level 1 or more, or after the cutoff), missed (cutoff passed, no ACK), or still open. Open pages are skipped. Missed pages count as late.
+- *Window.* The last 3 answered pages of the routine, by fire time. Two or more late ones trigger a suggestion.
+- *New prep time.* current + mean lateness in minutes, rounded up to 5, and never less than current + 5, capped at 120. Lateness of an acknowledged page is the time from its first beep to the ACK (capped at its cutoff); lateness of a missed page is the longest escalation offset in settings (at least 5 min), the least we know. The honesty factor is not applied: lateness is measured in real minutes, and the suggestion is in stated minutes, so it errs small and the person can apply again.
+- *Budget.* Prep time only moves the existing get-ready page earlier. Routines with prep 0 get no suggestion, because applying one would add a get-ready page. A suggestion therefore never changes the number of beeping pages and the daily budget holds.
+- *History.* The app plans the past 14 days separately with `planDays` (never delivered) so earlier days' leave-now pages are available. Plans use today's settings and the current commitments.
+- *State.* Apply sets `prepMinutes` on the suggested commitment and on the routine's commitments that have not started, through `setCommitments`, and records `since[routineKey] = now`, so only pages after that count. Dismiss adds the routine to `dismissed`. Both live in the saved snapshot.
+- *UI.* `PrepAdvice` sits at the top of the day sheet: the commitment title, the text "You often ACK this one late. Try N min prep instead of M.", and Apply and Dismiss buttons with names that include the title.
+
+**Geocoding typed addresses (Req 10).** The add form has an optional "Or type an address" field. `placeForTypedAddress` returns a saved place when `matchPlace` finds one, otherwise a new place without coordinates. For a new place the app calls `locatePlace(place, geocoder)` once; a result sets `place.point`, no result or an error leaves the place alone, so travel falls back to the default. `resolveTravel` includes coordinates in its cache key, so a route estimated as unknown is estimated again once the place has coordinates.
+- *Local geocoder.* `SavedPlacesGeocoder` matches the address against saved places that have coordinates. It never invents coordinates.
+- *Relay geocoder.* `RelayGeocoder` POSTs `{ address }` to `/geocode` with `x-relay-secret`. A non-200 answer, a malformed body or a network error all give `null`. It is chosen with `VITE_TRAVEL=relay` and a relay URL.
+- *Relay route.* `POST /geocode` validates the address (non-empty, at most 200 characters, else 400), then needs a `PlacesClient` (else 501 "geocoding not configured"), calls the GeoPlaces v2 `Geocode` operation with `QueryText` and `MaxResults: 1`, and returns `{ lat, lon, label }` from the first result (`Position` is `[lon, lat]`), or 404 when there is no usable result. `@aws-sdk/client-geo-places` is not installed, so the Geocode input and output shapes and a `GeocodeRequest` wrapper are typed locally in `handler.ts`, and `lambda.ts` leaves `places` unset until an operator adds the package.
+
 **Recurrence.** Expanded on local calendar days and converted with `zonedToEpoch` at the original wall time, so a weekly 9:00 meeting stays at 9:00 across DST. COUNT counts excluded dates, as RFC 5545 requires.
 
 ## Error handling
@@ -66,8 +89,10 @@ interface RuntimeState { acks: Record<pageId, epochMs>; delivered: alertId[] }
 - Travel adapter error: the commitment uses the default travel time.
 - Notification permission denied: in-app LCD, chirp and live region still page.
 - Unknown TZID or rule: imported with the fallback zone or first occurrence, with a warning.
-- Relay: 401 without the secret, 503 if unconfigured, 400 on bad input, 502 with the AWS error name.
+- Relay: 401 without the secret, 503 if unconfigured, 400 on bad input, 404 for an unknown path or an address with no result, 501 when geocoding is not configured, 502 with the AWS error name.
+- Geocoder error or no result: the typed place keeps no coordinates and uses the default travel time.
+- Suggestions: nothing is ever changed without Apply; dismissed routines stay hidden.
 
 ## Testing strategy
-- Unit (Vitest): zoned time and DST, lead times, honesty factor, escalation, ACK, coalescing, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import matching and merge, adapters with stubbed fetch and notification hosts, relay with stubbed AWS clients.
-- End to end (Playwright, production build, America/Chicago): add a commitment, time-travel, see 411 then 911 with the right text, ignore it and see 911 911, ACK by button and key; missed page shown as 666; budget and digest; body double; .ics import and re-import; 900x run that pauses on the page; reload persistence; keyboard tabs; phone layout with the docked ACK; axe-core WCAG 2.1 AA scan; reduced motion stops animation but keeps the page; the one-press demo day (sample load, 900x run, ACK resumes); the LCD line starts at the left edge and scrolls only when it overflows; the service worker shows a page as a notification with an ACK action and relays that ACK to the app (full Chromium in new headless mode, which grants notification permission); and the app shell opens offline.
+- Unit (Vitest): zoned time and DST, lead times, honesty factor, escalation, ACK, coalescing, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import matching and merge, the prep-time learner (no history, on-time ACKs, 2 of 3 late, missed pages, rounding, one suggestion per routine, determinism), adapters with stubbed fetch and notification hosts, the local and relay geocoders, the typed-address helpers, relay with stubbed AWS clients including `/geocode`.
+- End to end (Playwright, production build, America/Chicago): add a commitment, time-travel, see 411 then 911 with the right text, ignore it and see 911 911, ACK by button and key; missed page shown as 666; budget and digest; body double; .ics import and re-import; 900x run that pauses on the page; reload persistence; keyboard tabs; phone layout with the docked ACK; axe-core WCAG 2.1 AA scan; reduced motion stops animation but keeps the page; two late ACKs of a routine produce a prep suggestion that Apply turns into an earlier get-ready page, with zero axe violations; typed addresses with and without a saved match; the one-press demo day (sample load, 900x run, ACK resumes); the LCD line starts at the left edge and scrolls only when it overflows; the service worker shows a page as a notification with an ACK action and relays that ACK to the app (full Chromium in new headless mode, which grants notification permission); and the app shell opens offline.

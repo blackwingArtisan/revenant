@@ -13,6 +13,7 @@ export function AddForm({ pager }: { pager: PagerApi }) {
   const [time, setTime] = useState('');
   const [duration, setDuration] = useState(60);
   const [placeId, setPlaceId] = useState(places.find((p) => p.id !== settings.homePlaceId)?.id ?? '');
+  const [address, setAddress] = useState('');
   const [prep, setPrep] = useState(20);
   const [checkIn, setCheckIn] = useState(25);
   const [priority, setPriority] = useState<Priority>('normal');
@@ -31,18 +32,23 @@ export function AddForm({ pager }: { pager: PagerApi }) {
     if (duration < 5) return setError('It needs to last at least 5 minutes.');
     setError('');
     const start = zonedToEpoch({ year: y, month: m, day: d, ...hm }, tz);
-    const c = pager.addCommitment({
-      title: title.trim(),
-      kind,
-      start,
-      end: start + duration * MINUTE,
-      placeId: kind === 'appointment' ? placeId || null : null,
-      prepMinutes: kind === 'appointment' ? Math.max(0, prep) : 0,
-      priority,
-      checkInEveryMinutes: kind === 'focus' && checkIn > 0 ? checkIn : null,
-    });
+    const typedAddress = kind === 'appointment' ? address.trim() : '';
+    const c = pager.addCommitment(
+      {
+        title: title.trim(),
+        kind,
+        start,
+        end: start + duration * MINUTE,
+        placeId: kind === 'appointment' ? placeId || null : null,
+        prepMinutes: kind === 'appointment' ? Math.max(0, prep) : 0,
+        priority,
+        checkInEveryMinutes: kind === 'focus' && checkIn > 0 ? checkIn : null,
+      },
+      typedAddress || undefined,
+    );
     setAddedId(c.id);
     setTitle('');
+    setAddress('');
   }
 
   const honest = effectivePrepMinutes(prep, settings.honestyFactor);
@@ -96,6 +102,11 @@ export function AddForm({ pager }: { pager: PagerApi }) {
                 </option>
               ))}
             </select>
+          </label>
+          <label className="field">
+            <span>Or type an address</span>
+            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="22 Elm Court, Hollow Creek" maxLength={200} autoComplete="off" />
+            <small>An address that is not saved yet is looked up once; if it is not found, the default travel time is used.</small>
           </label>
           <label className="field">
             <span>Getting ready really takes (min)</span>

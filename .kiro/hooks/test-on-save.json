@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Run unit tests on source save",
+      "description": "Runs the Vitest unit suite whenever a TypeScript file under src/ or tests/unit/ is saved, so a broken lead-time, budget or calendar rule is caught at once.",
+      "trigger": "PostFileSave",
+      "matcher": "^(?:.*/)?(?:src/.*\\.tsx?|tests/unit/.*\\.ts)$",
+      "action": {
+        "type": "command",
+        "command": "npm test"
+      },
+      "timeout": 120,
+      "enabled": true
+    }
+  ]
+}

@@ -3,6 +3,8 @@ import { originFor } from '../engine/travel';
 import type { Commitment, Place, Settings } from '../engine/types';
 import type { TravelEstimator } from './travel';
 
+const coordKey = (p: Place) => (p.point ? `@${p.point.lat},${p.point.lon}` : '');
+
 /**
  * Ask the travel adapter for each physical appointment's minutes, leaving from
  * home or from the previous appointment. Results are cached by route, mode and
@@ -31,7 +33,8 @@ export async function resolveTravel(
       continue;
     }
     const departAt = leaveTime(c, settings.defaultTravelMinutes, settings);
-    const key = `${from.id}>${to.id}|${settings.travelMode}|${Math.floor(departAt / 3_600_000)}`;
+    // Coordinates are part of the key: a place that gets geocoded later must not reuse the answer for "unknown".
+    const key = `${from.id}${coordKey(from)}>${to.id}${coordKey(to)}|${settings.travelMode}|${Math.floor(departAt / 3_600_000)}`;
     let minutes = cache.get(key);
     if (minutes === undefined) {
       try {

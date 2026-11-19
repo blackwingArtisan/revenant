@@ -22,6 +22,7 @@ Each external service is a port with a free local implementation (default, used 
 |---|---|---|---|
 | Clock | `SimClock` (pause, jump, speed) | same clock at 1x | URL `?at=`, `?speed=` |
 | Travel time | straight-line distance x 1.3 at a per-mode speed | Amazon Location Service `CalculateRoutes` via the relay | `VITE_TRAVEL=local\|relay` |
+| Address lookup | saved places only; never invents coordinates | Amazon Location Service Places (GeoPlaces `Geocode`) via the relay's `/geocode`; answers 501 until `@aws-sdk/client-geo-places` is added to the relay | `VITE_TRAVEL=local\|relay` |
 | Out-of-app pages | Web Notifications from the service worker, with an ACK action | SMS via Amazon End User Messaging, repeats scheduled with EventBridge Scheduler | `VITE_CHANNEL=browser\|relay` |
 | Store | `localStorage` (guarded) | same port, swap for a synced store later | none |
 

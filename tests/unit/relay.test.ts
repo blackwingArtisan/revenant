@@ -2,7 +2,17 @@ import { CalculateRoutesCommand } from '@aws-sdk/client-geo-routes';
 import { SendTextMessageCommand } from '@aws-sdk/client-pinpoint-sms-voice-v2';
 import { CreateScheduleCommand, DeleteScheduleCommand, ListSchedulesCommand } from '@aws-sdk/client-scheduler';
 import { describe, expect, it } from 'vitest';
-import { atExpression, createRelay, scheduleName, smsBody, type RelayDeps, type RelayRequest } from '../../src/relay/handler';
+import {
+  atExpression,
+  createRelay,
+  GeocodeRequest,
+  MAX_ADDRESS_LENGTH,
+  scheduleName,
+  smsBody,
+  type PlacesClient,
+  type RelayDeps,
+  type RelayRequest,
+} from '../../src/relay/handler';
 
 /** Stub AWS clients: record every command, return canned output. Nothing reaches AWS. */
 function deps(overrides: Partial<RelayDeps['config']> = {}) {
@@ -148,5 +158,67 @@ describe('relay', () => {
     expect(scheduleName('a:b c#1')).toBe('page-a_b_c_1');
     expect(scheduleName('x'.repeat(100))).toHaveLength(64);
     expect(atExpression(Date.parse('2026-03-08T08:30:00.500Z'))).toBe('at(2026-03-08T08:30:00)');
+  });
+});
+
+describe('relay /geocode', () => {
+  /** A stub Places client: records each request and answers from `items`. Nothing reaches AWS. */
+  function withPlaces(items: Awaited<ReturnType<PlacesClient['send']>>['ResultItems']) {
+    const { d } = deps();
+    const requests: GeocodeRequest[] = [];
+    d.places = { send: async (r) => (requests.push(r), { ResultItems: items }) };
+    return { d, requests };
+  }
+
+  it('returns the first result position (lon, lat in AWS order) and label', async () => {
+    const { d, requests } = withPlaces([
+      { Title: '22 Elm Court', Position: [-87.981, 42.018], Address: { Label: '22 Elm Court, Hollow Creek' } },
+      { Title: 'Second', Position: [-88, 42] },
+    ]);
+    const res = await createRelay(d).http(req('/geocode', { address: '  22 Elm Court ' }));
+    expect(res).toEqual({ status: 200, body: { lat: 42.018, lon: -87.981, label: '22 Elm Court, Hollow Creek' } });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.input).toEqual({ QueryText: '22 Elm Court', MaxResults: 1 });
+  });
+
+  it('falls back to the title when a result has no address label', async () => {
+    const { d } = withPlaces([{ Title: 'Willow Clinic', Position: [-87.9, 42.1] }]);
+    expect((await createRelay(d).http(req('/geocode', { address: 'Willow Clinic' }))).body).toEqual({ lat: 42.1, lon: -87.9, label: 'Willow Clinic' });
+  });
+
+  it('answers 404 when there is no result or the position is unusable', async () => {
+    for (const items of [[], undefined, [{ Title: 'No position' }], [{ Position: [500, 0] }]]) {
+      const { d } = withPlaces(items);
+      expect((await createRelay(d).http(req('/geocode', { address: 'Nowhere Lane' }))).status).toBe(404);
+    }
+  });
+
+  it('rejects an empty, missing or overlong address with 400, without calling Places', async () => {
+    const { d, requests } = withPlaces([{ Position: [-88, 42] }]);
+    const relay = createRelay(d);
+    expect((await relay.http(req('/geocode', { address: '   ' }))).status).toBe(400);
+    expect((await relay.http(req('/geocode', {}))).status).toBe(400);
+    expect((await relay.http(req('/geocode', { address: 42 }))).status).toBe(400);
+    expect((await relay.http(req('/geocode', { address: 'x'.repeat(MAX_ADDRESS_LENGTH + 1) }))).status).toBe(400);
+    expect((await relay.http(req('/geocode', { address: 'x'.repeat(MAX_ADDRESS_LENGTH) }))).status).toBe(200);
+    expect(requests).toHaveLength(1);
+  });
+
+  it('answers 401 for a wrong secret, without calling Places', async () => {
+    const { d, requests } = withPlaces([{ Position: [-88, 42] }]);
+    expect((await createRelay(d).http(req('/geocode', { address: '22 Elm Court' }, 'wrong'))).status).toBe(401);
+    expect(requests).toHaveLength(0);
+  });
+
+  it('answers 501 "geocoding not configured" when no Places client is set', async () => {
+    const { d } = deps();
+    expect(d.places).toBeUndefined();
+    expect(await createRelay(d).http(req('/geocode', { address: '22 Elm Court' }))).toEqual({ status: 501, body: { error: 'geocoding not configured' } });
+  });
+
+  it('maps a Places failure to 502 with the error name', async () => {
+    const { d } = deps();
+    d.places = { send: async () => Promise.reject(Object.assign(new Error('slow down'), { name: 'ThrottlingException' })) };
+    expect(await createRelay(d).http(req('/geocode', { address: '22 Elm Court' }))).toEqual({ status: 502, body: { error: 'ThrottlingException' } });
   });
 });

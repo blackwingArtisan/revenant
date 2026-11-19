@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Typecheck and unit tests on stop",
+      "description": "When the agent finishes a turn, run the typecheck and the unit suite so every turn ends green.",
+      "trigger": "Stop",
+      "action": {
+        "type": "command",
+        "command": "npm run check"
+      },
+      "timeout": 300,
+      "enabled": true
+    }
+  ]
+}

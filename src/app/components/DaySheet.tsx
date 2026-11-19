@@ -1,6 +1,7 @@
 import { readableClock } from '../../engine/time';
 import type { DigestItem, PageStatus, PlannedPage } from '../../engine/types';
 import type { PagerApi } from '../usePager';
+import { PrepAdvice } from './PrepAdvice';
 
 const STATUS_LABEL: Record<PageStatus, string> = {
   scheduled: 'Armed',
@@ -54,6 +55,8 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
           <h2 id="sheet-title">Day sheet</h2>
           <BudgetMeter used={today.budget.used} limit={today.budget.limit} />
         </header>
+
+        <PrepAdvice pager={pager} />
 
         {today.pages.length === 0 ? (
           <div className="sheet-empty">

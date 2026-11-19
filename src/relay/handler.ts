@@ -4,6 +4,7 @@
  * not do with AWS credentials:
  *
  *   POST /route-eta  Amazon Location Service CalculateRoutes, departure-time aware
+ *   POST /geocode    Amazon Location Service Places (GeoPlaces v2 Geocode): address to coordinates
  *   POST /page       text a page now through Amazon End User Messaging SMS
  *   POST /schedule   create one-time EventBridge Scheduler schedules, one per
  *                    beep, so pages go out with the browser closed
@@ -29,6 +30,31 @@ export interface RelayConfig {
 export interface RoutesClient {
   send(command: CalculateRoutesCommand): Promise<Pick<CalculateRoutesCommandOutput, 'Routes'>>;
 }
+
+/**
+ * Input of the GeoPlaces v2 `Geocode` operation, typed locally: the package
+ * @aws-sdk/client-geo-places is not installed in this repository. Only the
+ * fields the relay uses are listed.
+ */
+export interface GeocodeInput {
+  QueryText: string;
+  MaxResults: number;
+}
+/** The part of the `Geocode` output the relay reads. `Position` is [longitude, latitude]. */
+export interface GeocodeOutput {
+  ResultItems?: { Title?: string; Position?: number[]; Address?: { Label?: string } }[];
+}
+/** What `PlacesClient.send` receives: the operation input, wrapped the way SDK commands are. */
+export class GeocodeRequest {
+  constructor(readonly input: GeocodeInput) {}
+}
+/**
+ * Narrow client shape for Amazon Location Service Places. An operator who adds
+ * the SDK package wraps its client: `{ send: (r) => sdk.send(new GeocodeCommand(r.input)) }`.
+ */
+export interface PlacesClient {
+  send(command: GeocodeRequest): Promise<GeocodeOutput>;
+}
 export interface SmsClient {
   send(command: SendTextMessageCommand): Promise<Pick<SendTextMessageCommandOutput, 'MessageId'>>;
 }
@@ -38,6 +64,8 @@ export interface SchedulerClient {
 
 export interface RelayDeps {
   routes: RoutesClient;
+  /** Optional: without it, `/geocode` answers 501 and the app keeps its default travel time. */
+  places?: PlacesClient;
   sms: SmsClient;
   scheduler: SchedulerClient;
   config: RelayConfig;
@@ -68,6 +96,9 @@ const MODES: Record<string, RouteTravelMode> = {
   bike: 'Scooter',
   transit: 'Car',
 };
+
+/** Longest address the relay will send to the geocoder. */
+export const MAX_ADDRESS_LENGTH = 200;
 
 const E164 = /^\+[1-9]\d{6,14}$/;
 /** SMS segments are 160 GSM characters; a pager message should fit in one. */
@@ -143,6 +174,20 @@ export function createRelay(deps: RelayDeps) {
     return { status: 200, body: { minutes: Math.ceil(seconds / 60) } };
   }
 
+  async function geocode(body: Record<string, unknown>): Promise<RelayResponse> {
+    const address = typeof body.address === 'string' ? body.address.trim() : '';
+    if (!address) return bad('address is required');
+    if (address.length > MAX_ADDRESS_LENGTH) return bad(`address must be at most ${MAX_ADDRESS_LENGTH} characters`);
+    if (!deps.places) return { status: 501, body: { error: 'geocoding not configured' } };
+    const out = await deps.places.send(new GeocodeRequest({ QueryText: address, MaxResults: 1 }));
+    const first = out.ResultItems?.[0];
+    const [lon, lat] = first?.Position ?? [];
+    if (!first || typeof lon !== 'number' || typeof lat !== 'number' || !isLonLat([lon, lat])) {
+      return { status: 404, body: { error: 'no match' } };
+    }
+    return { status: 200, body: { lat, lon, label: first.Address?.Label ?? first.Title ?? address } };
+  }
+
   async function page(body: Record<string, unknown>): Promise<RelayResponse> {
     const { to, code, text } = body;
     if (typeof to !== 'string' || !E164.test(to)) return bad('to must be an E.164 phone number');
@@ -213,6 +258,8 @@ export function createRelay(deps: RelayDeps) {
         switch (req.path) {
           case '/route-eta':
             return await routeEta(body);
+          case '/geocode':
+            return await geocode(body);
           case '/page':
             return await page(body);
           case '/schedule':

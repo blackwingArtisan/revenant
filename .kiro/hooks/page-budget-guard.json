@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Page budget guard",
+      "description": "When the planner, escalation, runtime, pager codes or the prep-time learner change, restate Revenant's paging rules and ask for a unit test before continuing.",
+      "trigger": "PostFileSave",
+      "matcher": "^(?:.*/)?src/engine/(?:plan|alerts|runtime|codes|learn)\\.ts$",
+      "action": {
+        "type": "agent",
+        "prompt": "You just edited the paging engine. Before continuing, confirm: (1) no page fires at an event's start unless the action is to start (focus block or video call); (2) the beeping pages per local day never exceed settings.dailyBudget, and anything cut lands in that day's digest; (3) the engine stays pure, with no Date.now(), randomness, storage or network; (4) ACK still cancels every later repeat of that page; (5) src/engine/learn.ts only returns suggestions and never changes a commitment, and applying one never adds a page. Add or update a unit test under tests/unit for any rule you changed, then run `npm test`."
+      },
+      "timeout": 300,
+      "enabled": true
+    }
+  ]
+}

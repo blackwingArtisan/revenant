@@ -6,6 +6,14 @@ export interface MemoryEntry extends Alert {
   receivedAt: number;
 }
 
+/** What the person did with prep-time suggestions: routines dismissed for good, and when each applied one started counting afresh. */
+export interface PrepAdviceState {
+  dismissed: string[];
+  since: Record<string, number>;
+}
+
+export const emptyPrepAdvice = (): PrepAdviceState => ({ dismissed: [], since: {} });
+
 export interface Snapshot {
   version: 1;
   commitments: Commitment[];
@@ -14,6 +22,8 @@ export interface Snapshot {
   runtime: RuntimeState;
   /** Message memory, newest first, like a pager's stored pages. */
   memory: MemoryEntry[];
+  /** Optional so snapshots saved before suggestions existed still load. */
+  prepAdvice?: PrepAdviceState;
 }
 
 /** Port: where the pager keeps its state. Local storage today; a synced store later. */

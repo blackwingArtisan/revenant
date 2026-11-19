@@ -999,6 +999,36 @@ kbd {
   letter-spacing: 0.06em;
   color: var(--bone-muted);
 }
+.advice {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 2px solid rgba(38, 33, 23, 0.55);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.35);
+}
+.advice h3 {
+  margin: 0 0 6px;
+  font: 900 16px/1.1 var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.advice ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.advice li + li {
+  margin-top: 10px;
+}
+.advice-text {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+}
+.advice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .sheet-tomorrow {
   margin: 14px 0 0;
   font-size: 13px;

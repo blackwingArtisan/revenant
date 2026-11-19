@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DeliveryReceipt } from '../adapters/channel';
 import { SimClock } from '../adapters/clock';
+import { locatePlace, placeForTypedAddress } from '../adapters/geocode';
 import { resolveTravel } from '../adapters/resolve-travel';
 import { diffSchedules, type ScheduledSet } from '../adapters/schedule-sync';
 import { selectAdapters } from '../adapters/select';
-import { LocalStorageStore, type MemoryEntry, type Snapshot } from '../adapters/storage';
+import { emptyPrepAdvice, LocalStorageStore, type MemoryEntry, type PrepAdviceState, type Snapshot } from '../adapters/storage';
 import { nextAlertAt, pageStatus } from '../engine/alerts';
 import { parseIcs } from '../engine/ics';
 import { icsToCommitments, mergeCommitments } from '../engine/importer';
+import { suggestPrepTimes, type PrepSuggestion } from '../engine/learn';
 import { planDays } from '../engine/plan';
 import { acknowledge, activePages, emptyRuntimeState, firstDueBetween, pinnedPageIds, rewind, tick, type RuntimeState } from '../engine/runtime';
 import { defaultSettings, sampleDay, SAMPLE_PLACES } from '../engine/sample';
@@ -17,7 +19,12 @@ import { beep, unlockAudio } from './beep';
 
 const MEMORY_SIZE = 30;
 const store = new LocalStorageStore();
-const adapters = selectAdapters(import.meta.env as Record<string, string | undefined>);
+// The local geocoder reads the saved places through this holder, which the hook keeps current.
+const savedPlaces: { current: Place[] } = { current: [] };
+const adapters = selectAdapters(import.meta.env as Record<string, string | undefined>, () => savedPlaces.current);
+
+/** How many days of past leave-now pages the pager looks back over when it learns. */
+const LEARN_DAYS = 14;
 
 interface Boot {
   clock: SimClock;
@@ -102,6 +109,7 @@ export function usePager() {
   const [settings, setSettings] = useState<Settings>(initial.settings);
   const [runtime, setRuntimeState] = useState<RuntimeState>(initial.runtime);
   const [memory, setMemory] = useState<MemoryEntry[]>(initial.memory);
+  const [advice, setAdvice] = useState<PrepAdviceState>(initial.prepAdvice ?? emptyPrepAdvice());
   const [now, setNow] = useState(() => clock.now());
   const [speed, setSpeedState] = useState(clock.speed);
   const [travel, setTravel] = useState<Record<string, number>>({});
@@ -136,6 +144,7 @@ export function usePager() {
 
   const tz = settings.timeZone;
   const dayKey = localDayKey(now, tz);
+  savedPlaces.current = places;
 
   // Clock: 4 ticks a second is plenty for a pager and cheap at 900x.
   useEffect(() => {
@@ -158,6 +167,29 @@ export function usePager() {
   const plan = useMemo(
     () => planDays({ commitments, places, settings, travelMinutes: travel, dayKeys: [dayKey, addDays(dayKey, 1)], pinnedPageIds: pinned }),
     [commitments, places, settings, travel, dayKey, pinned],
+  );
+
+  // Advice: which routines are usually ACK'd late. History needs the past days' pages,
+  // so plan them separately; this plan is never delivered.
+  const historyPlan = useMemo(
+    () =>
+      planDays({
+        commitments,
+        places,
+        settings,
+        travelMinutes: travel,
+        dayKeys: Array.from({ length: LEARN_DAYS + 1 }, (_, i) => addDays(dayKey, i - LEARN_DAYS)),
+        pinnedPageIds: pinned,
+      }),
+    [commitments, places, settings, travel, dayKey, pinned],
+  );
+  const minute = Math.floor(now / 60_000) * 60_000;
+  const prepSuggestions = useMemo<PrepSuggestion[]>(
+    () =>
+      suggestPrepTimes({ pages: historyPlan.pages, commitments, acks: runtime.acks, settings, now: minute, ignoreBefore: advice.since }).filter(
+        (s) => !advice.dismissed.includes(s.routineKey),
+      ),
+    [historyPlan, commitments, runtime.acks, settings, minute, advice],
   );
 
   // The pager loop: deliver whatever has come due.
@@ -212,8 +244,8 @@ export function usePager() {
 
   // Save everything the user would expect to survive a reload.
   useEffect(() => {
-    store.save({ version: 1, commitments, places, settings, runtime, memory });
-  }, [commitments, places, settings, runtime, memory]);
+    store.save({ version: 1, commitments, places, settings, runtime, memory, prepAdvice: advice });
+  }, [commitments, places, settings, runtime, memory, advice]);
 
   const active = useMemo(() => activePages(plan.pages, runtime, now), [plan, runtime, now]);
 
@@ -306,10 +338,46 @@ export function usePager() {
     controls.runDay();
   };
 
-  const addCommitment = useCallback((c: NewCommitment) => {
-    const full: Commitment = { ...c, id: newId('c'), source: 'manual' };
+  /**
+   * Add a commitment. A typed address that matches no saved place becomes a new
+   * place, and the geocoder is asked for its coordinates once; on a result the
+   * place gets them (so travel uses them), on no match it keeps the default travel time.
+   */
+  const addCommitment = useCallback((c: NewCommitment, address?: string) => {
+    let placeId = c.placeId;
+    if (address?.trim()) {
+      const { place, created } = placeForTypedAddress(address, savedPlaces.current, () => newId('place'));
+      placeId = place.id;
+      if (created) {
+        savedPlaces.current = [...savedPlaces.current, place];
+        setPlaces((list) => [...list, place]);
+        void locatePlace(place, adapters.geocoder).then((located) => {
+          const point = located.point;
+          if (point) setPlaces((list) => list.map((p) => (p.id === place.id && p.point === null ? { ...p, point } : p)));
+        });
+      }
+    }
+    const full: Commitment = { ...c, placeId, id: newId('c'), source: 'manual' };
     setCommitments((list) => mergeCommitments(list, [full]));
     return full;
+  }, []);
+
+  /** Apply a suggestion: set the new prep time on the routine's commitments that are still ahead, and start counting afresh. */
+  const applyPrepSuggestion = useCallback(
+    (s: PrepSuggestion) => {
+      const at = clock.now();
+      setCommitments((list) =>
+        list.map((c) => (s.commitmentIds.includes(c.id) && (c.id === s.commitmentId || c.start > at) ? { ...c, prepMinutes: s.suggestedPrepMinutes } : c)),
+      );
+      setAdvice((a) => ({ ...a, since: { ...a.since, [s.routineKey]: at } }));
+      setAnnouncement(`Prep time for ${s.title} is now ${s.suggestedPrepMinutes} minutes.`);
+    },
+    [clock],
+  );
+
+  const dismissPrepSuggestion = useCallback((s: PrepSuggestion) => {
+    setAdvice((a) => (a.dismissed.includes(s.routineKey) ? a : { ...a, dismissed: [...a.dismissed, s.routineKey] }));
+    setAnnouncement(`Suggestion for ${s.title} dismissed.`);
   }, []);
 
   const removeCommitment = useCallback((id: string) => setCommitments((list) => list.filter((c) => c.id !== id)), []);
@@ -346,6 +414,7 @@ export function usePager() {
     setSettings(fresh.settings);
     setRuntime(fresh.runtime);
     setMemory([]);
+    setAdvice(emptyPrepAdvice());
     setReadIndex(null);
     setImportReport(null);
     travelCache.current.clear();
@@ -391,6 +460,9 @@ export function usePager() {
     importReport,
     notifyPermission,
     adapterSummary: adapters.summary,
+    prepSuggestions,
+    applyPrepSuggestion,
+    dismissPrepSuggestion,
     travel,
     next: nextAlertAt(plan.pages, runtime.acks, now),
     controls,

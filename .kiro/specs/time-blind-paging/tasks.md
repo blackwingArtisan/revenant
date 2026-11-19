@@ -3,23 +3,25 @@
 - [x] 1. Zoned time helpers with DST gap and overlap rules, day keys, 23/25-hour days (Req 1.6, 1.7, 3.7)
   - [x] 1.1 Unit tests: Chicago winter/summer, spring-forward gap, fall-back overlap, Kolkata half-hour offset
 - [x] 2. Types, numeric codes and the wallet code card (Req 6.1)
-- [x] 3. Planner: get-ready and leave-now lead times, honesty factor, buffer, default travel, video calls (Req 1.1-1.4)
+- [x] 3. Planner: get-ready and leave-now lead times, honesty factor, buffer, default travel, video calls (Req 1.1-1.4, 1.8, 1.9)
   - [x] 3.1 Unit tests for each lead-time rule and the DST lead-time case
 - [x] 4. Origin chaining from the previous appointment, with a route cache (Req 1.5)
-- [x] 5. Escalation repeats with cutoffs; page status; next alert time (Req 2.1, 2.3)
-- [x] 6. Runtime: deliver once, coalesce repeats after a jump, drop stale pages, ACK (Req 2.2, 2.4-2.6)
+- [x] 5. Escalation repeats with cutoffs; page status; next alert time (Req 2.1, 2.3, 2.7)
+- [x] 6. Runtime: deliver once, coalesce repeats after a jump, drop stale pages, ACK (Req 2.2, 2.4-2.6, 2.8)
   - [x] 6.1 Unit tests for escalation, ACK cancelling repeats, coalescing and stale pages
 - [x] 7. Daily budget with ranking and pinning; digest items and the silent digest page (Req 3.1-3.5, 3.7)
   - [x] 7.1 Unit tests for ranking, pinning, low priority, all-day, per-day budgets, digest timing
-- [x] 8. Body double: focus start, check-ins, wrap-up, riders follow the start page (Req 4.1-4.4)
+- [x] 8. Body double: focus start, check-ins, wrap-up, riders follow the start page (Req 4.1-4.4, 4.6, 4.7)
 - [x] 9. iCalendar reader: unfolding, params, escapes, durations, GEO, cancelled, nested components (Req 5.2, 5.4)
 - [x] 10. Recurrence: DAILY, WEEKLY with BYDAY, MONTHLY, INTERVAL, COUNT, UNTIL, EXDATE, RECURRENCE-ID (Req 5.3)
 - [x] 11. Import: place matching, video links, GEO places, merge that keeps tuned prep and priority (Req 5.5, 5.6)
   - [x] 11.1 Unit tests for every parse and import rule, including weekly across fall-back
-- [x] 12. Adapters: SimClock, straight-line and relay travel, browser and relay channels, guarded store, env selection (Req 7.1, 8.1-8.3)
-- [x] 13. Relay: Location CalculateRoutes, End User Messaging SMS, Scheduler schedules and ACK cleanup, shared secret (Req 8.2-8.6)
+- [x] 12. Adapters: SimClock, straight-line and relay travel, browser and relay channels, guarded store, env selection (Req 7.1, 7.7, 7.9, 8.1-8.3, 8.9)
+- [x] 13. Relay: Location CalculateRoutes, End User Messaging SMS, Scheduler schedules and ACK cleanup, shared secret (Req 8.2-8.6, 8.8)
   - [x] 13.1 Unit tests with stub AWS clients; no AWS call in any test
-- [x] 14. Pager UI: LCD, LED, chirp, buttons, keys, live region, message memory with 666 for missed pages (Req 6.1-6.3)
+- [ ] 14. Pager UI: LCD, LED, chirp, buttons, keys, live region, message memory with 666 for missed pages (Req 6.1-6.3, 6.10-6.15, 2.9)
+  - [x] 14.1 LCD code and text, live region, ACK by button and key A, READ button, 666 from message memory (Req 6.1, 6.2, 6.3, 6.14, 2.9); covered by `pager.spec.ts`
+  - [ ] 14.2 Tests for the LED, the chirp (skipped when muted), the MUTE button, vibration, and the R and M keys (Req 6.10-6.13, 6.15); the code exists, no test asserts it
 - [x] 15. Time machine: pause, jumps, next page, speeds, run the day, pause on beep at the exact page time (Req 7.1, 7.2)
 - [x] 16. Rewind: travelling back forgets future beeps and ACKs (Req 7.3)
 - [x] 17. Day sheet (greenbar paper), budget meter, digest list, add form, import panel, settings and places (Req 3, 5.1, 5.7)
@@ -29,13 +31,32 @@
 - [x] 21. Persistence across reloads (Req 6.7)
 - [x] 22. Playwright end-to-end suite on the production build, desktop and phone (Req 1-7)
   - [x] 22.1 Accessibility: axe-core WCAG 2.1 A/AA scan while paging, reduced-motion check (Req 6.2, 6.6)
-- [x] 23. Relay schedule sync from the app: send future beeps to `/schedule` on plan change when `VITE_CHANNEL=relay`, withdraw moved or removed pages, never from the time machine (Req 8.4)
+- [x] 23. Relay schedule sync from the app: send future beeps to `/schedule` on plan change when `VITE_CHANNEL=relay`, withdraw moved or removed pages, never from the time machine (Req 8.4, 8.7, 8.11, 8.12)
   - [x] 23.1 Unit tests for the schedule diff, the channel's `/schedule` call, and the relay replacing an existing schedule
 - [x] 24. First-impression fixes from the clean-clone review
-  - [x] 24.1 LCD message shows its start, holds, then scrolls only when it overflows (Req 6.8)
+  - [x] 24.1 LCD message shows its start, holds, then scrolls only when it overflows (Req 6.8, 6.17, 6.18)
   - [x] 24.2 "Watch a day in about a minute" button above the fold; ACK resumes a paused day run (Req 7.5, 7.6)
-  - [x] 24.3 End-to-end tests for the service worker: notification with an ACK action relayed to the app, and the offline shell (Req 6.4, 6.9)
+  - [x] 24.3 End-to-end tests for the service worker: notification with an ACK action relayed to the app, and the offline shell (Req 6.4, 6.9, 6.16)
   - [x] 24.4 Wallet card headings end in exactly one stop, with a unit test
   - [x] 24.5 A fast run stops on the first page in a clock step, not on a repeat that came due later in the same step (Req 7.2)
-- [ ] 25. Learn from late ACKs: suggest a larger prep time when leave-now pages are often acknowledged at level 2 or later
-- [ ] 26. Geocoding for typed addresses through Amazon Location Service Places, behind the travel adapter
+- [x] 25. Learn from late ACKs: suggest a larger prep time when leave-now pages are often acknowledged at level 2 or later (Req 9)
+  - [x] 25.1 Add EARS criteria 9.1-9.15 to `requirements.md` and the "Learning from late ACKs" section to `design.md`
+  - [x] 25.2 Pure `src/engine/learn.ts`: `suggestPrepTimes`, `ackLevel`, `routineKey`; a window of the last 3 answered pages, missed pages count as late, whole minutes rounded up to 5, one suggestion per routine, never changes anything (Req 9.1-9.7, 9.12-9.14)
+  - [x] 25.3 Unit tests in `tests/unit/learn.test.ts`: no history, on-time ACKs, 2 of 3 late, missed pages, open pages, rounding and cap, one suggestion per routine, apply cutoff, determinism (Req 9.1-9.6, 9.10, 9.12, 9.14)
+  - [x] 25.4 App state: past-days history plan, Apply and Dismiss through the existing state path, optional `prepAdvice` in the saved snapshot (Req 9.7-9.10, 9.13, 9.15)
+  - [x] 25.5 `PrepAdvice` on the day sheet with the plain text, Apply and Dismiss buttons, keyboard accessible (Req 9.11)
+  - [x] 25.6 Playwright test `tests/e2e/learn.spec.ts`: two late ACKs on the time machine, the suggestion appears with zero axe violations, Apply from the keyboard moves the get-ready page (Req 9.1, 9.8, 9.11, 9.13)
+- [x] 26. Geocoding for typed addresses through Amazon Location Service Places, behind the travel adapter (Req 10)
+  - [x] 26.1 Add EARS criteria 10.1-10.14 to `requirements.md` and the "Geocoding typed addresses" section to `design.md`
+  - [x] 26.2 Geocoder port with `SavedPlacesGeocoder` (default) and `RelayGeocoder`, selected by `VITE_TRAVEL`; `placeForTypedAddress` and `locatePlace` (Req 10.1-10.8)
+  - [x] 26.3 Relay `POST /geocode` with a locally typed `PlacesClient`; 400, 401, 404, 501 (Req 10.10-10.14)
+  - [x] 26.4 `resolveTravel` cache key includes coordinates, so a newly geocoded place is estimated again (Req 10.9)
+  - [x] 26.5 Vitest: local geocoder, relay geocoder with a stubbed fetch, typed-address helpers, relay `/geocode` with a stub `PlacesClient`; no network call (Req 10.1-10.14)
+  - [x] 26.6 "Or type an address" field on the add form, and Playwright tests in `tests/e2e/geocode.spec.ts` for an unknown and a saved address (Req 10.1, 10.4, 10.5)
+- [ ] 27. Operator follow-up: enable `/geocode` on the real path. Add `@aws-sdk/client-geo-places` to the relay's dependencies, pass a `places` client built from `GeoPlacesClient` and `GeocodeCommand` in `src/relay/lambda.ts`, and grant the Lambda role `geo-places:Geocode`. Until then `/geocode` answers 501 (Req 10.10, 10.14). Not done here: the package must not be installed in this pass
+- [ ] 28. Unit test that a focus-start page repeats only during the 20 minutes after the block starts (Req 4.5)
+- [ ] 29. Move the URL-switch parsing (`?at`, `?speed`, `?tz`, `?sample`, `?fresh`) out of `usePager.ts` into a pure function and unit test it (Req 7.4, 7.10-7.13)
+- [ ] 30. Unit test that no module under `src/app` or `src/adapters` imports an AWS SDK package, so the browser bundle holds no AWS credentials (Req 8.6)
+- [ ] 31. Import and settings end-to-end tests: importing an .ics sends no network request, a file with an unreadable zone shows the warning, and the save-place form works (Req 5.1, 5.7, 5.18)
+- [ ] 32. End-to-end test for Dismiss, and for a dismissed or applied suggestion staying hidden after a reload (Req 9.9, 9.10, 9.15)
+- [ ] 33. End-to-end test for the time machine's +5 min, +15 min, Pause, 1x and 60x controls and the `?speed=` switch (Req 7.1, 7.7, 7.9, 7.10)

@@ -23,6 +23,8 @@ Adults with ADHD (and anyone with time blindness) who miss appointments not beca
 5. **Body doubles.** A focus block pages at its start (121), checks in on a cadence, and pages a wrap-up (200).
 6. **Imports a calendar.** A local .ics file (Google, Apple, Outlook exports) becomes commitments, matched to saved places.
 7. **Demos a whole day in a minute.** A time machine (pause, jump, next page, 900x) drives the same engine the real clock drives.
+8. **Learns from late ACKs.** When the leave-now page of a routine is usually ACK'd late, it suggests more prep time. It only suggests, the user presses Apply, and it moves an existing get-ready page, so the daily budget still holds.
+9. **Finds typed addresses.** An address typed for an appointment is looked up once so travel time uses real coordinates; with no result the default travel time stays.
 
 ## Product rules (non-negotiable)
 - **Fewer pages beat more pages.** Any feature that adds a page must say which page it replaces or why the budget still holds.

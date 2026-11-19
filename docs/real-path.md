@@ -5,6 +5,7 @@ Revenant runs entirely in the browser by default. The real path adds one AWS Lam
 ```
 PWA --(x-relay-secret)--> Lambda Function URL (src/relay/lambda.ts)
                            |-- POST /route-eta  -> Amazon Location Service  GeoRoutes CalculateRoutes
+                           |-- POST /geocode    -> Amazon Location Service  GeoPlaces Geocode (needs @aws-sdk/client-geo-places, see below)
                            |-- POST /page       -> AWS End User Messaging   SendTextMessage (TRANSACTIONAL)
                            |-- POST /schedule   -> EventBridge Scheduler     CreateSchedule at(...), self-deleting
                            |-- POST /ack        -> EventBridge Scheduler     ListSchedules + DeleteSchedule
@@ -19,16 +20,25 @@ Nothing in this repository deploys the relay. All its logic is in `src/relay/han
 | Endpoint | Body | Does |
 |---|---|---|
 | `POST /route-eta` | `{ origin: [lon, lat], destination: [lon, lat], mode, departAt? }` | Fastest route; returns `{ minutes }` (rounded up) |
+| `POST /geocode` | `{ address }` (1 to 200 characters) | First Places result as `{ lat, lon, label }` |
 | `POST /page` | `{ to, code, text }` | One SMS, at most 160 characters: `911 LEAVE NOW: ...` |
 | `POST /schedule` | `{ to, alerts: [{ id, at (epoch ms), code, text }] }` | One one-time schedule per alert, deleted after it runs; an existing schedule with the same name is replaced |
 | `POST /ack` | `{ pageId }` | Deletes the page's pending repeat schedules |
 
-Errors: `401` missing or wrong secret, `503` relay not configured, `400` bad input, `404` unknown path, `502` with the AWS error name.
+Errors: `401` missing or wrong secret, `503` relay not configured, `400` bad input, `404` unknown path (or, for `/geocode`, an address with no result), `501` geocoding not configured, `502` with the AWS error name.
+
+## Geocoding (not enabled yet)
+In relay mode the app geocodes an address typed on the add form once, when it matches no saved place, and stores the coordinates on the new place so travel uses them. The relay's `/geocode` route calls the GeoPlaces v2 `Geocode` operation through a narrow `PlacesClient` interface typed in `src/relay/handler.ts`.
+
+The SDK package `@aws-sdk/client-geo-places` is **not installed** in this repository, so `src/relay/lambda.ts` leaves the places client unset and `/geocode` answers `501 {"error":"geocoding not configured"}`. The app treats that as "no match" and keeps the default travel time. To enable it (tracked as task 27 in `.kiro/specs/time-blind-paging/tasks.md`):
+1. Add `@aws-sdk/client-geo-places` to the relay's dependencies.
+2. In `lambda.ts`, build the client: `places: { send: (r) => placesClient.send(new GeocodeCommand(r.input)) }` with `new GeoPlacesClient({ region })`.
+3. Grant the Lambda role `geo-places:Geocode`.
 
 ## Setting it up (owner steps, not automated)
 1. **Phone number.** In AWS End User Messaging SMS, register an origination identity (a toll-free number needs registration before it can send). Put its ARN or number in `RELAY_ORIGINATION_IDENTITY`.
 2. **Scheduler.** Create a schedule group (default `revenant-pager`) and an IAM role that EventBridge Scheduler can assume to invoke the relay Lambda. Set `RELAY_SCHEDULER_TARGET_ARN` (the Lambda ARN) and `RELAY_SCHEDULER_ROLE_ARN`.
-3. **Lambda.** Bundle `src/relay/lambda.ts` (for example with esbuild) and deploy it with a Function URL (auth type NONE; the relay checks its own shared secret). Its role needs `geo-routes:CalculateRoutes`, `sms-voice:SendTextMessage`, `scheduler:CreateSchedule`, `scheduler:ListSchedules`, `scheduler:DeleteSchedule` and `iam:PassRole` on the scheduler role.
+3. **Lambda.** Bundle `src/relay/lambda.ts` (for example with esbuild) and deploy it with a Function URL (auth type NONE; the relay checks its own shared secret). Its role needs `geo-routes:CalculateRoutes`, `geo-places:Geocode` (once geocoding is enabled), `sms-voice:SendTextMessage`, `scheduler:CreateSchedule`, `scheduler:ListSchedules`, `scheduler:DeleteSchedule` and `iam:PassRole` on the scheduler role.
 4. **Secret.** Set `RELAY_SHARED_SECRET` to a long random value and `RELAY_ALLOWED_ORIGIN` to the PWA's origin.
 5. **App.** Build the PWA with `VITE_TRAVEL=relay`, `VITE_CHANNEL=relay`, `VITE_RELAY_URL`, `VITE_RELAY_SECRET` and `VITE_PAGER_NUMBER`.
 

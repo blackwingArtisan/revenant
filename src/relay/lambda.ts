@@ -32,6 +32,10 @@ const config: RelayConfig = {
   sharedSecret: process.env.RELAY_SHARED_SECRET ?? '',
 };
 
+// `places` is left unset on purpose: @aws-sdk/client-geo-places is not a dependency yet, so
+// `/geocode` answers 501 "geocoding not configured". To enable it, add the package and pass
+// `places: { send: (r) => new GeoPlacesClient({ region }).send(new GeocodeCommand(r.input)) }`
+// (see docs/real-path.md).
 const relay = createRelay({
   routes: new GeoRoutesClient({ region }),
   sms: new PinpointSMSVoiceV2Client({ region }),

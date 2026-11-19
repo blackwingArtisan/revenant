@@ -16,8 +16,10 @@ Adults with ADHD and anyone with time blindness. The problem is rarely forgettin
 ## What works today
 - **Pages at the moment to act.** Leave-now = start - travel - buffer. Get-ready = leave-now - prep x an honesty factor (default x1.5, because "10 minutes" is never 10 minutes).
 - **Travel from where you will be.** Straight-line distance at a per-mode speed, chained from the previous appointment if it ends within three hours, else from home. Video calls say `JOIN` with no travel.
+- **Typed addresses get real travel times.** An address typed on the add form that matches no saved place becomes a place and is looked up once. By default only saved places are known, so an unknown address keeps the default travel time and coordinates are never invented; with the relay, Amazon Location Service Places finds them.
 - **Escalation until ACK.** Unanswered pages repeat at +3, +6 and +10 minutes (`911 911`, `911 911 911`) and stop at the cutoff. ACK cancels every later repeat. Missed pages come back from message memory as `666`.
 - **A strict daily budget.** At most N beeping pages per local day (default 6), ranked must > normal, leave-now > focus > get-ready. Cut and low-priority items go into one silent `100` digest.
+- **Learns from late ACKs.** If the leave-now page for a routine (the same title at the same place) was ACK'd late, or missed, in 2 of the last 3 times, the day sheet suggests more prep: "You often ACK this one late. Try 25 min prep instead of 15." Nothing changes until you press Apply, and Dismiss hides it. It moves the existing get-ready page and never adds a beep.
 - **Body double.** Focus blocks page `121` to start, check in on a cadence ("STILL ON QUARTERLY TAXES? 95 MIN LEFT") and `200` to wrap up.
 - **Calendar import.** Drop an .ics file: UTC, TZID and floating times, all-day events, DAILY/WEEKLY/MONTHLY rules with INTERVAL, COUNT, UNTIL, EXDATE and RECURRENCE-ID, cancelled events, Windows time-zone names, GEO. Locations match saved places; video links become online. Re-import updates in place and keeps your tuned prep times.
 - **Time zones done properly.** All math is in elapsed minutes; days, labels and the digest follow your IANA zone, including 23- and 25-hour DST days.
@@ -61,8 +63,8 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-- **Unit (Vitest, 93 tests):** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay against stub AWS clients.
-- **End to end (Playwright, 16 tests):** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the one-press demo day; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
+- **Unit (Vitest, 128 tests):** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules) against stub AWS clients.
+- **End to end (Playwright, 19 tests):** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the one-press demo day; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
 
 ## Architecture
 ```
@@ -70,6 +72,7 @@ src/engine     pure, deterministic paging engine (no I/O, no Date.now)
   time.ts        IANA zone math, DST gap/overlap rules
   plan.ts        commitments -> pages: lead times, budget, digest, body double
   alerts.ts      escalation as a pure function of (page, ack, now)
+  learn.ts       prep-time suggestions from late ACKs (advisory, pure)
   runtime.ts     deliver-once ticking, ACK, rewind
   ics.ts         iCalendar reader and recurrence expansion
   importer.ts    events -> commitments, place matching, merge
@@ -85,6 +88,7 @@ The app is a thin shell: each tick it asks the engine "given these pages, these 
 |---|---|---|---|
 | Clock | `SimClock` with pause, jump and speed | the same clock at 1x | `?at=`, `?speed=` |
 | Travel time | straight-line distance x 1.3 at per-mode speed | Amazon Location Service `CalculateRoutes` via the relay | `VITE_TRAVEL=local\|relay` |
+| Address lookup | saved places only, never invents coordinates | Amazon Location Service Places (GeoPlaces `Geocode`) via the relay's `/geocode`; not enabled until `@aws-sdk/client-geo-places` is added (answers 501) | `VITE_TRAVEL=local\|relay` (same switch as travel) |
 | Out-of-app pages | Web Notifications + service worker, with an ACK action | SMS via AWS End User Messaging; every future beep handed to self-deleting EventBridge Scheduler schedules, so pages go out with the app closed | `VITE_CHANNEL=browser\|relay` |
 | Storage | `localStorage`, guarded | same port | none |
 
@@ -93,7 +97,7 @@ See `.env.example` for every setting and `docs/real-path.md` for the relay's end
 **Deploy target (free):** the PWA is a static site; `dist/` can be served from Cloudflare Pages or any static host. Not deployed from this repository.
 
 ## Built with Kiro
-Revenant is specified and steered in Kiro's format. See [`/.kiro`](.kiro) for the steering files (product, tech, structure), the `time-blind-paging` spec (EARS requirements, design, tasks) and the agent hooks, and [`KIRO-LOG.md`](KIRO-LOG.md) for how they were produced and used.
+Revenant is specified and steered in Kiro's format. See [`/.kiro`](.kiro) for the steering files (product, tech, structure), the `time-blind-paging` spec (EARS requirements, design, tasks) and the hooks (`.kiro/hooks/*.json`: unit tests on save, a paging-rules guard, a code-card check and a typecheck on stop), and [`KIRO-LOG.md`](KIRO-LOG.md) for how they were produced and used.
 
 ## Credits
 Fonts are self-hosted through Fontsource: VT323, Big Shoulders Display, IBM Plex Mono and Monoton under the SIL Open Font License 1.1, and Special Elite under the Apache License 2.0. Runtime: React (MIT). AWS SDK for JavaScript v3 (Apache 2.0) is an optional dependency used only by the relay.
