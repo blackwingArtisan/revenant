@@ -1,8 +1,17 @@
 import { dayReportLine } from '../../engine/report';
-import { readableClock } from '../../engine/time';
+import { localDayKey, readableClock } from '../../engine/time';
 import type { DigestItem, PageStatus, PlannedPage } from '../../engine/types';
 import type { PagerApi } from '../usePager';
+import { Fragment } from 'react';
 import { PrepAdvice } from './PrepAdvice';
+
+function NowLine({ label }: { label: string }) {
+  return (
+    <li className="now-line" data-testid="now-line" aria-hidden="true">
+      <span>NOW {label}</span>
+    </li>
+  );
+}
 
 const STATUS_LABEL: Record<PageStatus, string> = {
   scheduled: 'Armed',
@@ -68,6 +77,10 @@ function BudgetMeter({ used, limit }: { used: number; limit: number }) {
 
 export function DaySheet({ pager }: { pager: PagerApi }) {
   const { today, tz, statusOf, commitments, places, plan } = pager;
+  // A red line marks "now" between the pages already fired and the ones still ahead.
+  const isToday = localDayKey(pager.now, tz) === today.dayKey;
+  const firstAhead = today.pages.findIndex((p) => p.fireAt > pager.now);
+  const nowAt = !isToday ? -1 : firstAhead === -1 ? today.pages.length : firstAhead;
   const placeName = (id: string | null) => (id ? (places.find((p) => p.id === id)?.name ?? 'Unknown place') : 'No travel');
   const onToday = commitments.filter((c) => c.start < pager.dayStart + 48 * 3_600_000 && c.end >= pager.dayStart);
   const tomorrow = plan.days[1];
@@ -93,29 +106,33 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
           </div>
         ) : (
           <ol className="pages" aria-label="Pages planned for today">
-            {today.pages.map((p) => {
+            {today.pages.map((p, i) => {
               const status = statusOf(p);
               return (
-                <li key={p.id} className={`page-row page-row--${status} ${p.silent ? 'page-row--silent' : ''}`} data-testid="page-row" data-page-id={p.id} data-status={status}>
-                  <span className="page-when">
-                    <time className="page-time">{readableClock(p.fireAt, tz)}</time>
-                    <span className="page-code">{p.code}</span>
-                  </span>
-                  <span className="page-what">
-                    <span className="page-kind">{KIND_LABEL[p.kind]}</span>
-                    <span className="page-text">{p.text}</span>
-                    {p.escalateAt.length > 0 && <span className="page-esc">repeats {p.escalateAt.length}x until ACK</span>}
-                  </span>
-                  {status === 'missed' && !p.silent ? (
-                    <span className="stamp stamp--missed" data-testid="rip">
-                      <span className="sr-only">Missed. </span>RIP {readableClock(p.fireAt, tz).replace(/ (AM|PM)$/, '')}
+                <Fragment key={p.id}>
+                  {i === nowAt && <NowLine label={readableClock(pager.now, tz)} />}
+                  <li className={`page-row page-row--${status} ${p.silent ? 'page-row--silent' : ''}`} data-testid="page-row" data-page-id={p.id} data-status={status}>
+                    <span className="page-when">
+                      <time className="page-time">{readableClock(p.fireAt, tz)}</time>
+                      <span className="page-code">{p.code}</span>
                     </span>
-                  ) : (
-                    <span className={`stamp stamp--${status}`}>{p.silent && status !== 'acked' ? (status === 'scheduled' ? 'Quiet' : 'Unread') : STATUS_LABEL[status]}</span>
-                  )}
-                </li>
+                    <span className="page-what">
+                      <span className="page-kind">{KIND_LABEL[p.kind]}</span>
+                      <span className="page-text">{p.text}</span>
+                      {p.escalateAt.length > 0 && <span className="page-esc">repeats {p.escalateAt.length}x until ACK</span>}
+                    </span>
+                    {status === 'missed' && !p.silent ? (
+                      <span className="stamp stamp--missed" data-testid="rip">
+                        <span className="sr-only">Missed. </span>RIP {readableClock(p.fireAt, tz).replace(/ (AM|PM)$/, '')}
+                      </span>
+                    ) : (
+                      <span className={`stamp stamp--${status}`}>{p.silent && status !== 'acked' ? (status === 'scheduled' ? 'Quiet' : 'Unread') : STATUS_LABEL[status]}</span>
+                    )}
+                  </li>
+                </Fragment>
               );
             })}
+            {nowAt === today.pages.length && <NowLine label={readableClock(pager.now, tz)} />}
           </ol>
         )}
 

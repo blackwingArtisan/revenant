@@ -65,3 +65,21 @@ test('a form error outlines the field, marks it invalid and moves focus to it', 
   await expect(starts).toBeFocused();
   await expect(what).not.toHaveAttribute('aria-invalid', 'true');
 });
+
+test('the day is visible at a glance: a day bar with a playhead, a red now-line and an ember edge on a loud 911', async ({ page }) => {
+  await page.goto('/?at=2026-11-19T10:00&tz=America/Chicago&sample&fresh');
+  // 6 AM to midnight is 18 hours, so 10:00 AM sits at 4/18 of the bar.
+  const head = await page.getByTestId('daybar-head').evaluate((el) => (el as HTMLElement).style.left);
+  expect(parseFloat(head)).toBeCloseTo((4 / 18) * 100, 3);
+  await expect(page.getByTestId('daybar').locator('.daybar-tick')).toHaveCount(await page.getByTestId('page-row').count());
+  // The now-line sits right before the first page still ahead: the dentist's leave-now at 10:08.
+  await expect(page.getByTestId('now-line')).toHaveText('NOW 10:00 AM');
+  await expect(page.getByTestId('now-line').locator('xpath=following-sibling::li[1]')).toContainText('LEAVE NOW: DENTIST');
+
+  await expect(page.getByTestId('alarm')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Next page' }).click();
+  await expect(page.getByTestId('lcd-code')).toHaveText('911');
+  await expect(page.getByTestId('alarm')).toBeAttached();
+  await page.getByRole('button', { name: 'Acknowledge page 911' }).click();
+  await expect(page.getByTestId('alarm')).toHaveCount(0);
+});

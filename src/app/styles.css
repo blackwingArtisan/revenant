@@ -185,11 +185,11 @@ kbd {
   z-index: 1;
   max-width: 1220px;
   margin: 0 auto;
-  padding: 40px 16px 8px;
+  padding: 28px 16px 4px;
 }
 .logo {
   margin: 0;
-  font: 400 clamp(44px, 8vw, 84px) / 1 var(--font-logo);
+  font: 400 clamp(40px, 6vw, 60px) / 1 var(--font-logo);
   letter-spacing: 0.04em;
   color: var(--phosphor);
   text-shadow:
@@ -263,8 +263,12 @@ kbd {
   flex: 1 1 280px;
   max-width: 52ch;
   margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+.why--then {
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 13px;
 }
 .why a {
   color: var(--ink);
@@ -284,9 +288,18 @@ kbd {
   margin: 0 auto;
   padding: 24px 16px 48px;
   display: grid;
-  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
   gap: 36px;
   align-items: start;
+}
+/* While a demo day runs, the pager is the show: the work column steps back until you reach for it. */
+.layout--running .col--work {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+.layout--running .col--work:hover,
+.layout--running .col--work:focus-within {
+  opacity: 1;
 }
 .col {
   display: grid;
@@ -355,7 +368,7 @@ kbd {
 .pager {
   position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 460px;
   padding: 16px 20px 22px;
   border-radius: 30px 30px 40px 40px;
   background:
@@ -526,6 +539,25 @@ kbd {
 }
 .pager--booting[data-boot='segments'] .lcd-code {
   opacity: 0.55;
+}
+/* A loud 911 lights the edges of the screen in ember; reduced motion keeps a still border. */
+.alarm {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: inset 0 0 110px 10px rgba(255, 74, 28, 0.32);
+  animation: alarm-pulse 1.2s ease-in-out infinite;
+}
+@keyframes alarm-pulse {
+  50% {
+    box-shadow: inset 0 0 60px 0 rgba(255, 74, 28, 0.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alarm {
+    box-shadow: inset 0 0 0 4px rgba(255, 74, 28, 0.6);
+  }
 }
 .cta--wake {
   animation: cta-wake 0.9s ease-out 1;
@@ -805,6 +837,60 @@ kbd {
   color: var(--phosphor);
   text-shadow: 0 0 8px rgba(157, 255, 110, 0.6);
 }
+.daybar {
+  position: relative;
+  height: 30px;
+  margin: 0 6px 12px;
+  border-bottom: 2px solid #3a2a12;
+}
+.daybar-tick {
+  position: absolute;
+  bottom: 0;
+  width: 3px;
+  height: 14px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--amber);
+}
+.daybar-tick--quiet {
+  height: 8px;
+  opacity: 0.6;
+}
+.daybar-tick--acked {
+  background: var(--phosphor);
+}
+.daybar-tick--missed {
+  background: #b07ad0;
+}
+.daybar-tick--paging {
+  background: var(--ember);
+  height: 18px;
+}
+.daybar-head {
+  position: absolute;
+  bottom: -6px;
+  width: 2px;
+  height: 30px;
+  margin-left: -1px;
+  background: #ff3b2f;
+  box-shadow: 0 0 6px #ff3b2f;
+}
+.daybar-label {
+  position: absolute;
+  top: -2px;
+  font: 13px/1 var(--font-lcd);
+  color: #c98a3a;
+}
+.daybar-label--from {
+  left: 0;
+}
+.daybar-label--noon {
+  left: 33.33%;
+  transform: translateX(-50%);
+}
+.daybar-label--to {
+  right: 0;
+}
 .vcr-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1045,6 +1131,23 @@ kbd {
   margin: 0;
   padding: 0;
 }
+.now-line {
+  position: relative;
+  height: 0;
+  border-top: 2px solid #d3261a;
+  margin: 0 -4px;
+}
+.now-line span {
+  position: absolute;
+  right: 0;
+  top: -9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #d3261a;
+  color: #fff;
+  font: 13px/1.1 var(--font-lcd);
+  letter-spacing: 0.06em;
+}
 .page-row {
   display: grid;
   grid-template-columns: 82px 92px minmax(0, 1fr) auto;
@@ -1053,9 +1156,6 @@ kbd {
   padding: 9px 8px;
   border-bottom: 1px solid rgba(38, 33, 23, 0.12);
 }
-.page-row:nth-child(even) {
-  background: var(--bone-2);
-}
 .page-when {
   display: contents;
 }
@@ -1063,7 +1163,7 @@ kbd {
   font: 21px/1 var(--font-lcd);
 }
 .page-code {
-  font: 28px/1 var(--font-lcd);
+  font: 22px/1 var(--font-lcd);
   letter-spacing: 0.04em;
 }
 .page-what {
@@ -1084,17 +1184,29 @@ kbd {
   font-size: 11.5px;
   color: var(--bone-muted);
 }
+/* Hierarchy: only what needs you is tinted. Paging rows glow ember, missed rows go purple, done rows fade. */
+.page-row--acked {
+  /* faded with a muted ink that still passes contrast, not with opacity */
+  color: var(--bone-muted);
+}
+.page-row--acked .page-kind,
+.page-row--acked .page-esc {
+  color: var(--bone-muted);
+}
 .page-row--acked .page-text,
 .page-row--acked .page-code {
   text-decoration: line-through;
   text-decoration-thickness: 2px;
-  opacity: 0.6;
+}
+.page-row--missed {
+  background: rgba(93, 42, 107, 0.09);
 }
 .page-row--missed .page-code {
   color: #5d2a6b;
 }
 .page-row--paging {
-  background: #ffe1d2 !important;
+  background: #ffe1d2;
+  box-shadow: inset 4px 0 0 #b02a0c;
 }
 
 .stamp {
@@ -1561,7 +1673,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
     grid-row: 1 / span 2;
   }
   .page-code {
-    font-size: 24px;
+    font-size: 22px;
   }
   .stamp {
     grid-column: 2;

@@ -122,6 +122,9 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 6.24 WHEN every beeping page of the day has been answered or has gone moot and at least one budgeted page was missed, THE SYSTEM SHALL show one silent 666 recap listing the missed pages, without a beep and without counting toward the daily budget.
 6.25 WHEN the user presses ACK while the 666 recap is showing and no page is beeping, THE SYSTEM SHALL dismiss the recap for that day.
 6.26 WHEN the day sheet shows a missed beeping page, THE SYSTEM SHALL stamp it with "RIP" and the time it fired.
+6.27 WHILE the clock is on a day that has pages, THE SYSTEM SHALL show a 6 AM-to-midnight day bar under the time machine clock with one tick per page and a playhead at the current time.
+6.28 WHILE the clock is on the day the sheet shows, THE SYSTEM SHALL draw a "now" line between the pages already fired and the first page still ahead.
+6.29 WHILE a leave-now (911) page is beeping and the pager is not reading memory, THE SYSTEM SHALL light the edges of the screen in ember, pulsing, or as a still border WHERE the user prefers reduced motion.
 
 ## Requirement 7: Time machine
 **User story:** As a presenter or tester, I want to drive the clock, so that a whole day can be shown in a minute.

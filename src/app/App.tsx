@@ -61,6 +61,9 @@ export default function App() {
 
   return (
     <div className="app">
+      {pager.active[0] && !pager.active[0].silent && pager.active[0].code.startsWith('911') && pager.readIndex === null && (
+        <div className="alarm" data-testid="alarm" aria-hidden="true" />
+      )}
       <a href="#main" className="skip">
         Skip to the day sheet
       </a>
@@ -97,7 +100,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="layout">
+      <main className={`layout${pager.controls.dayRun ? ' layout--running' : ''}`}>
         <div className="col col--device">
           <Pager pager={pager} boot={boot.phase} />
           <p className="keys">
