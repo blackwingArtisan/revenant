@@ -28,6 +28,7 @@
 - [x] 20. Reduced motion and phone layout (Req 6.6)
 - [x] 21. Persistence across reloads (Req 6.7)
 - [x] 22. Playwright end-to-end suite on the production build, desktop and phone (Req 1-7)
+  - [x] 22.1 Accessibility: axe-core WCAG 2.1 A/AA scan while paging, reduced-motion check (Req 6.2, 6.6)
 - [x] 23. Relay schedule sync from the app: send future beeps to `/schedule` on plan change when `VITE_CHANNEL=relay`, withdraw moved or removed pages, never from the time machine (Req 8.4)
   - [x] 23.1 Unit tests for the schedule diff, the channel's `/schedule` call, and the relay replacing an existing schedule
 - [ ] 24. Learn from late ACKs: suggest a larger prep time when leave-now pages are often acknowledged at level 2 or later

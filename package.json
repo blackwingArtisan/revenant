@@ -34,6 +34,7 @@
     "@aws-sdk/client-scheduler": "3.1170.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
     "@playwright/test": "1.65.1",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",

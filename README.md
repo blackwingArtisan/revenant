@@ -19,7 +19,7 @@ Adults with ADHD and anyone with time blindness. The problem is rarely forgettin
 - **Time zones done properly.** All math is in elapsed minutes; days, labels and the digest follow your IANA zone, including 23- and 25-hour DST days.
 - **Time machine.** Pause, +5/+15/+60 min, jump to the next page, 1x/60x/900x, and "Run the day from 6 AM", which stops on the exact minute a page fires. Travelling back replays the day exactly.
 - **Lock-screen pages.** With notifications allowed, the service worker shows each page with an ACK action that acknowledges it in the app.
-- **Accessible.** Every page is announced through an assertive live region; all controls work from the keyboard (A = ACK, R = READ, M = mute, N = next page); visible focus; high-contrast text; `prefers-reduced-motion` gives a still pager. On a phone, a docked mini pager with a large ACK button appears when the device is scrolled away.
+- **Accessible.** Every page is announced through an assertive live region; all controls work from the keyboard (A = ACK, R = READ, M = mute, N = next page); visible focus; zero axe-core WCAG 2.1 A/AA violations in the end-to-end suite; `prefers-reduced-motion` gives a still pager. On a phone, a docked mini pager with a large ACK button appears when the device is scrolled away.
 - **Offline and private.** The service worker caches the app shell for offline use. Everything stays in this browser's storage.
 
 ## Codes
@@ -56,7 +56,7 @@ npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
 - **Unit (Vitest, 89 tests):** time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay against stub AWS clients.
-- **End to end (Playwright, 9 tests):** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK.
+- **End to end (Playwright, 12 tests):** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion.
 
 ## Architecture
 ```

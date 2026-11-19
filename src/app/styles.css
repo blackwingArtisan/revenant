@@ -635,7 +635,7 @@ kbd {
 }
 .vcr-play {
   font-size: 18px;
-  opacity: 0.6;
+  color: #c98a3a; /* dimmed amber, still 4.5:1 on the VCR glass */
 }
 .vcr-play--on {
   opacity: 1;
