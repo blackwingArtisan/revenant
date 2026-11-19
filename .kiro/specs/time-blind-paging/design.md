@@ -57,6 +57,8 @@ interface RuntimeState { acks: Record<pageId, epochMs>; delivered: alertId[] }
 
 **Budget.** Per local day of `fireAt`, rank `countsToBudget` pages by (already beeped, priority, kind, time, id) and keep the first N. Riders (check-ins, wrap-ups) follow their focus-start page. Pinning already-beeped pages keeps the plan stable when a new must-page arrives mid-day.
 
+**Remote schedule sync.** `diffSchedules(sent, pages, acks, now)` keeps a signature of each page's full beep run. Unchanged pages send nothing; a page whose signature changed is withdrawn and its future beeps scheduled again; a page gone from the plan is withdrawn. The relay replaces a schedule on name conflict, so re-sending after a reload is safe.
+
 **Recurrence.** Expanded on local calendar days and converted with `zonedToEpoch` at the original wall time, so a weekly 9:00 meeting stays at 9:00 across DST. COUNT counts excluded dates, as RFC 5545 requires.
 
 ## Error handling

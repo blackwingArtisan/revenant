@@ -162,17 +162,27 @@ export function createRelay(deps: RelayDeps) {
       }
       const event: ScheduledPageEvent = { kind: 'scheduled-page', to, code: alert.code, text: alert.text };
       const name = scheduleName(alert.id);
-      await deps.scheduler.send(
-        new CreateScheduleCommand({
-          Name: name,
-          GroupName: config.scheduleGroup,
-          ScheduleExpression: atExpression(alert.at),
-          ScheduleExpressionTimezone: 'UTC',
-          FlexibleTimeWindow: { Mode: 'OFF' },
-          ActionAfterCompletion: 'DELETE',
-          Target: { Arn: config.schedulerTargetArn, RoleArn: config.schedulerRoleArn, Input: JSON.stringify(event) },
-        }),
-      );
+      const fireAt = alert.at;
+      const create = () =>
+        deps.scheduler.send(
+          new CreateScheduleCommand({
+            Name: name,
+            GroupName: config.scheduleGroup,
+            ScheduleExpression: atExpression(fireAt),
+            ScheduleExpressionTimezone: 'UTC',
+            FlexibleTimeWindow: { Mode: 'OFF' },
+            ActionAfterCompletion: 'DELETE',
+            Target: { Arn: config.schedulerTargetArn, RoleArn: config.schedulerRoleArn, Input: JSON.stringify(event) },
+          }),
+        );
+      try {
+        await create();
+      } catch (err) {
+        // Re-sending a plan (after a reload, say) replaces the schedule instead of failing.
+        if (!(err instanceof Error && err.name === 'ConflictException')) throw err;
+        await deps.scheduler.send(new DeleteScheduleCommand({ Name: name, GroupName: config.scheduleGroup }));
+        await create();
+      }
       created.push(name);
     }
     return { status: 200, body: { scheduled: created } };

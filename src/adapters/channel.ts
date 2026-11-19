@@ -15,6 +15,12 @@ export interface PagerChannel {
   deliver(alert: Alert): Promise<DeliveryReceipt>;
   /** Withdraw a page (on ACK), so a lock-screen notification does not linger. */
   withdraw(pageId: string): Promise<void>;
+  /**
+   * Optional: hand future beeps to a remote scheduler so they go out with the
+   * app closed. A channel that schedules does not send those beeps again from
+   * `deliver`.
+   */
+  schedule?(alerts: readonly Alert[]): Promise<boolean>;
 }
 
 /** Records deliveries in memory. Used by tests. */
@@ -111,6 +117,9 @@ export class RelaySmsChannel implements PagerChannel {
     private readonly fetchImpl: typeof fetch = (...args) => fetch(...args),
   ) {}
 
+  /** Alert ids the relay's scheduler will send, so the open app does not send them twice. */
+  private readonly scheduled = new Set<string>();
+
   private post(path: string, body: unknown): Promise<Response> {
     return this.fetchImpl(`${this.baseUrl.replace(/\/$/, '')}${path}`, {
       method: 'POST',
@@ -121,11 +130,24 @@ export class RelaySmsChannel implements PagerChannel {
 
   async deliver(alert: Alert): Promise<DeliveryReceipt> {
     if (alert.silent) return { channel: this.name, delivered: false, detail: 'silent page' };
+    if (this.scheduled.has(alert.id)) return { channel: this.name, delivered: true, detail: 'sent by the relay schedule' };
     const res = await this.post('/page', { to: this.to, pageId: alert.pageId, code: alert.code, text: alert.text });
     return { channel: this.name, delivered: res.ok, detail: res.ok ? undefined : `relay ${res.status}` };
   }
 
   async withdraw(pageId: string): Promise<void> {
+    for (const id of [...this.scheduled]) if (id.startsWith(`${pageId}#`)) this.scheduled.delete(id);
     await this.post('/ack', { pageId });
+  }
+
+  async schedule(alerts: readonly Alert[]): Promise<boolean> {
+    const loud = alerts.filter((a) => !a.silent);
+    if (loud.length === 0) return true;
+    const res = await this.post('/schedule', {
+      to: this.to,
+      alerts: loud.map(({ id, at, code, text }) => ({ id, at, code, text })),
+    });
+    if (res.ok) for (const a of loud) this.scheduled.add(a.id);
+    return res.ok;
   }
 }

@@ -55,7 +55,7 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-- **Unit (Vitest, 84 tests):** time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import and merge, adapters, and the relay against stub AWS clients.
+- **Unit (Vitest, 89 tests):** time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay against stub AWS clients.
 - **End to end (Playwright, 9 tests):** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK.
 
 ## Architecture
@@ -79,7 +79,7 @@ The app is a thin shell: each tick it asks the engine "given these pages, these 
 |---|---|---|---|
 | Clock | `SimClock` with pause, jump and speed | the same clock at 1x | `?at=`, `?speed=` |
 | Travel time | straight-line distance x 1.3 at per-mode speed | Amazon Location Service `CalculateRoutes` via the relay | `VITE_TRAVEL=local\|relay` |
-| Out-of-app pages | Web Notifications + service worker, with an ACK action | SMS via AWS End User Messaging; repeats as self-deleting EventBridge Scheduler schedules | `VITE_CHANNEL=browser\|relay` |
+| Out-of-app pages | Web Notifications + service worker, with an ACK action | SMS via AWS End User Messaging; every future beep handed to self-deleting EventBridge Scheduler schedules, so pages go out with the app closed | `VITE_CHANNEL=browser\|relay` |
 | Storage | `localStorage`, guarded | same port | none |
 
 See `.env.example` for every setting and `docs/real-path.md` for the relay's endpoints and setup. The browser never holds AWS credentials.

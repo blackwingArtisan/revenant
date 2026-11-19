@@ -90,6 +90,7 @@ Revenant pages a person with ADHD only when they need to act: get ready, leave, 
 8.1 THE SYSTEM SHALL use the free local travel estimate and browser notifications by default.
 8.2 WHERE `VITE_TRAVEL=relay` and a relay URL is set THE SYSTEM SHALL get travel times from Amazon Location Service through the relay, with the departure time.
 8.3 WHERE `VITE_CHANNEL=relay` and a relay URL and number are set THE SYSTEM SHALL send pages as SMS through Amazon End User Messaging via the relay, and withdraw pending repeats on ACK.
-8.4 WHEN the relay receives a schedule request THE SYSTEM SHALL create one self-deleting EventBridge Scheduler schedule per beep, so pages go out with the browser closed.
+8.4 WHEN the relay receives a schedule request THE SYSTEM SHALL create one self-deleting EventBridge Scheduler schedule per beep, replacing any schedule of the same name, so pages go out with the browser closed.
+8.7 WHERE the relay channel is selected and the clock is live, WHEN the plan or acknowledgements change THE SYSTEM SHALL schedule only the changed pages' future beeps, withdraw pages that moved or left the plan, and SHALL NOT send a scheduled beep a second time from the open app.
 8.5 IF the relay has no shared secret configured, or a request lacks it, THEN THE SYSTEM SHALL refuse the request.
 8.6 THE SYSTEM SHALL never send AWS credentials to the browser.

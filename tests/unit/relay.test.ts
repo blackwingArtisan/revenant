@@ -82,6 +82,24 @@ describe('relay', () => {
     expect((await createRelay(d).http(req('/page', { to: '555-0123', code: '911', text: 'x' }))).status).toBe(400);
   });
 
+  it('replaces an existing schedule of the same name instead of failing', async () => {
+    const { d, sent } = deps();
+    let conflicts = 1;
+    const base = d.scheduler.send;
+    d.scheduler.send = async (c) => {
+      if (c instanceof CreateScheduleCommand && conflicts-- > 0) {
+        sent.push(c);
+        throw Object.assign(new Error('exists'), { name: 'ConflictException' });
+      }
+      return base(c);
+    };
+    const res = await createRelay(d).http(
+      req('/schedule', { to: '+15555550123', alerts: [{ id: 'd:leave-now#0', at: Date.parse('2026-11-19T16:10:00Z'), code: '911', text: 'LEAVE NOW' }] }),
+    );
+    expect(res).toMatchObject({ status: 200, body: { scheduled: ['page-d_leave-now_0'] } });
+    expect(sent.map((c) => (c as object).constructor.name)).toEqual(['CreateScheduleCommand', 'DeleteScheduleCommand', 'CreateScheduleCommand']);
+  });
+
   it('schedules one self-deleting EventBridge schedule per beep', async () => {
     const { d, sent } = deps();
     const res = await createRelay(d).http(

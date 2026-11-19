@@ -18,7 +18,7 @@ src/
     sample.ts        invented sample places, settings and day
     sample-ics.ts    invented sample calendar export
   adapters/          ports with local and real implementations
-    clock.ts, travel.ts, channel.ts, storage.ts, resolve-travel.ts, select.ts
+    clock.ts, travel.ts, channel.ts, storage.ts, resolve-travel.ts, schedule-sync.ts, select.ts
   relay/             real path only: AWS Lambda (Location, SMS, Scheduler)
   app/               React PWA
     index.html, main.tsx, App.tsx, usePager.ts, beep.ts, styles.css

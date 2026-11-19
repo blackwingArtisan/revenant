@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DeliveryReceipt } from '../adapters/channel';
 import { SimClock } from '../adapters/clock';
 import { resolveTravel } from '../adapters/resolve-travel';
+import { diffSchedules, type ScheduledSet } from '../adapters/schedule-sync';
 import { selectAdapters } from '../adapters/select';
 import { LocalStorageStore, type MemoryEntry, type Snapshot } from '../adapters/storage';
 import { nextAlertAt, pageStatus } from '../engine/alerts';
@@ -177,6 +178,23 @@ export function usePager() {
       setSpeedState(0);
     }
   }, [now, plan, clock, setRuntime]);
+
+  // Real path only: hand future beeps to the relay's scheduler so pages go out
+  // with the app closed. The time machine never touches a real scheduler.
+  const scheduledRef = useRef<ScheduledSet>({});
+  useEffect(() => {
+    const channel = adapters.channel;
+    if (!channel.schedule || !clock.isLive) return;
+    const diff = diffSchedules(scheduledRef.current, plan.pages, runtime.acks, clock.now());
+    if (diff.withdraw.length === 0 && diff.create.length === 0) return;
+    scheduledRef.current = diff.next;
+    void (async () => {
+      for (const pageId of diff.withdraw) await channel.withdraw(pageId);
+      if (diff.create.length > 0 && !(await channel.schedule!(diff.create))) scheduledRef.current = {};
+    })().catch(() => {
+      scheduledRef.current = {};
+    });
+  }, [plan, runtime.acks, clock]);
 
   // Save everything the user would expect to survive a reload.
   useEffect(() => {

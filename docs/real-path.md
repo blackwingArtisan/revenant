@@ -11,6 +11,8 @@ PWA --(x-relay-secret)--> Lambda Function URL (src/relay/lambda.ts)
                            '-- scheduled event  -> SendTextMessage (the schedule's payload)
 ```
 
+In relay mode the app keeps the relay's schedules in step with the plan (`src/adapters/schedule-sync.ts`): when the plan or an ACK changes, it withdraws pages that moved or were removed and schedules the future beeps of changed pages. It does this only while the clock is live, never from the time machine. Beeps the relay has scheduled are not sent again by the open app.
+
 Nothing in this repository deploys the relay. All its logic is in `src/relay/handler.ts` and is unit-tested against stub AWS clients (`tests/unit/relay.test.ts`).
 
 ## Endpoints
@@ -18,7 +20,7 @@ Nothing in this repository deploys the relay. All its logic is in `src/relay/han
 |---|---|---|
 | `POST /route-eta` | `{ origin: [lon, lat], destination: [lon, lat], mode, departAt? }` | Fastest route; returns `{ minutes }` (rounded up) |
 | `POST /page` | `{ to, code, text }` | One SMS, at most 160 characters: `911 LEAVE NOW: ...` |
-| `POST /schedule` | `{ to, alerts: [{ id, at (epoch ms), code, text }] }` | One one-time schedule per alert, deleted after it runs |
+| `POST /schedule` | `{ to, alerts: [{ id, at (epoch ms), code, text }] }` | One one-time schedule per alert, deleted after it runs; an existing schedule with the same name is replaced |
 | `POST /ack` | `{ pageId }` | Deletes the page's pending repeat schedules |
 
 Errors: `401` missing or wrong secret, `503` relay not configured, `400` bad input, `404` unknown path, `502` with the AWS error name.
