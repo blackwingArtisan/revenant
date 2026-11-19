@@ -23,6 +23,12 @@ test('one press on an empty pager loads the sample day and runs it, and ACK keep
   await expect(page.getByText('PLAY 900x')).toBeVisible();
   await expect(page.getByTestId('page-row').first()).toBeVisible();
 
+  // While the day runs, the day sheet stays at full strength; only the comparison card and the console step back.
+  const opacity = (selector: string) => page.locator(selector).first().evaluate((el) => Number(getComputedStyle(el).opacity));
+  await page.mouse.move(0, 0);
+  expect(await opacity('.sheet')).toBe(1);
+  await expect.poll(() => opacity('.ba')).toBeLessThan(1);
+
   // The learner has two weeks of labelled sample history, so its card shows from the first second.
   const suggestion = page.getByTestId('prep-suggestion');
   await expect(suggestion).toHaveCount(1);

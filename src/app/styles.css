@@ -107,9 +107,9 @@ kbd {
 }
 
 .app::before {
-  /* the moon: a cratered disc, mostly in shadow, with a halo */
+  /* the moon: a cratered disc, mostly in shadow, with a halo; it hangs over the masthead and scrolls away with it */
   content: '';
-  position: fixed;
+  position: absolute;
   top: 36px;
   right: max(16px, 6vw);
   width: 86px;
@@ -292,13 +292,16 @@ kbd {
   gap: 36px;
   align-items: start;
 }
-/* While a demo day runs, the pager is the show: the work column steps back until you reach for it. */
-.layout--running .col--work {
-  opacity: 0.7;
+/* While a demo day runs, the pager and the day sheet are the show: the comparison card and the console step back until you reach for them. */
+.layout--running .ba,
+.layout--running .console {
+  opacity: 0.6;
   transition: opacity 0.3s ease;
 }
-.layout--running .col--work:hover,
-.layout--running .col--work:focus-within {
+.layout--running .ba:hover,
+.layout--running .ba:focus-within,
+.layout--running .console:hover,
+.layout--running .console:focus-within {
   opacity: 1;
 }
 .col {
@@ -672,6 +675,11 @@ kbd {
 }
 .lcd-text {
   display: inline-block;
+}
+.lcd-ticker[data-scroll] {
+  /* a scrolling line fades in and out at the glass edges instead of being cut */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%);
 }
 .lcd-ticker[data-scroll] .lcd-text {
   animation: ticker var(--ticker-time, 9s) linear infinite;
@@ -1709,6 +1717,13 @@ input[type='time']::-webkit-calendar-picker-indicator {
   }
   .card-row {
     grid-template-columns: 70px 1fr;
+  }
+}
+
+/* On the narrowest phones the moon would sit on the logo: leave it out. */
+@media (max-width: 420px) {
+  .app::before {
+    display: none;
   }
 }
 
