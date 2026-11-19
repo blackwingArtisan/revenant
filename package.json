@@ -1,0 +1,46 @@
+{
+  "name": "revenant-pager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The pager, back from the dead for ADHD brains: it only goes off when you need to act.",
+  "license": "MIT",
+  "author": "Stubborn Otter Software",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite --port 3150 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 3151 --strictPort",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "@fontsource/big-shoulders-display": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/monoton": "5.3.0",
+    "@fontsource/special-elite": "5.3.0",
+    "@fontsource/vt323": "5.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "optionalDependencies": {
+    "@aws-sdk/client-geo-routes": "3.1170.0",
+    "@aws-sdk/client-pinpoint-sms-voice-v2": "3.1170.0",
+    "@aws-sdk/client-scheduler": "3.1170.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
+  }
+}

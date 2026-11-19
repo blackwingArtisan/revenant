@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Example Corp//Example Calendar//EN
+BEGIN:VEVENT
+UID:e2e-haircut@example.com
+SUMMARY:Haircut
+DTSTART;TZID=America/Chicago:20261119T140000
+DTEND;TZID=America/Chicago:20261119T143000
+LOCATION:Ironbark Gym\, 9 Foundry Ln
+END:VEVENT
+BEGIN:VEVENT
+UID:e2e-review@example.com
+SUMMARY:Design review with the
+  product team
+DTSTART:20261119T220000Z
+DURATION:PT45M
+LOCATION:https://meet.example.com/haunted-hall
+END:VEVENT
+END:VCALENDAR

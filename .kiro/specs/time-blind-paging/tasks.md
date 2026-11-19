@@ -1,0 +1,33 @@
+# Tasks: Time-blind paging
+
+- [x] 1. Zoned time helpers with DST gap and overlap rules, day keys, 23/25-hour days (Req 1.6, 1.7, 3.7)
+  - [x] 1.1 Unit tests: Chicago winter/summer, spring-forward gap, fall-back overlap, Kolkata half-hour offset
+- [x] 2. Types, numeric codes and the wallet code card (Req 6.1)
+- [x] 3. Planner: get-ready and leave-now lead times, honesty factor, buffer, default travel, video calls (Req 1.1-1.4)
+  - [x] 3.1 Unit tests for each lead-time rule and the DST lead-time case
+- [x] 4. Origin chaining from the previous appointment, with a route cache (Req 1.5)
+- [x] 5. Escalation repeats with cutoffs; page status; next alert time (Req 2.1, 2.3)
+- [x] 6. Runtime: deliver once, coalesce repeats after a jump, drop stale pages, ACK (Req 2.2, 2.4-2.6)
+  - [x] 6.1 Unit tests for escalation, ACK cancelling repeats, coalescing and stale pages
+- [x] 7. Daily budget with ranking and pinning; digest items and the silent digest page (Req 3.1-3.5, 3.7)
+  - [x] 7.1 Unit tests for ranking, pinning, low priority, all-day, per-day budgets, digest timing
+- [x] 8. Body double: focus start, check-ins, wrap-up, riders follow the start page (Req 4.1-4.4)
+- [x] 9. iCalendar reader: unfolding, params, escapes, durations, GEO, cancelled, nested components (Req 5.2, 5.4)
+- [x] 10. Recurrence: DAILY, WEEKLY with BYDAY, MONTHLY, INTERVAL, COUNT, UNTIL, EXDATE, RECURRENCE-ID (Req 5.3)
+- [x] 11. Import: place matching, video links, GEO places, merge that keeps tuned prep and priority (Req 5.5, 5.6)
+  - [x] 11.1 Unit tests for every parse and import rule, including weekly across fall-back
+- [x] 12. Adapters: SimClock, straight-line and relay travel, browser and relay channels, guarded store, env selection (Req 7.1, 8.1-8.3)
+- [x] 13. Relay: Location CalculateRoutes, End User Messaging SMS, Scheduler schedules and ACK cleanup, shared secret (Req 8.2-8.6)
+  - [x] 13.1 Unit tests with stub AWS clients; no AWS call in any test
+- [x] 14. Pager UI: LCD, LED, chirp, buttons, keys, live region, message memory with 666 for missed pages (Req 6.1-6.3)
+- [x] 15. Time machine: pause, jumps, next page, speeds, run the day, pause on beep at the exact page time (Req 7.1, 7.2)
+- [x] 16. Rewind: travelling back forgets future beeps and ACKs (Req 7.3)
+- [x] 17. Day sheet (greenbar paper), budget meter, digest list, add form, import panel, settings and places (Req 3, 5.1, 5.7)
+- [x] 18. Service worker: app shell cache, notification ACK action relayed to the app (Req 6.4)
+- [x] 19. Docked mini pager when the device is out of view (Req 6.5)
+- [x] 20. Reduced motion and phone layout (Req 6.6)
+- [x] 21. Persistence across reloads (Req 6.7)
+- [x] 22. Playwright end-to-end suite on the production build, desktop and phone (Req 1-7)
+- [ ] 23. Relay schedule sync from the app: send the day's alerts to `/schedule` on plan change when `VITE_CHANNEL=relay` (Req 8.4)
+- [ ] 24. Learn from late ACKs: suggest a larger prep time when leave-now pages are often acknowledged at level 2 or later
+- [ ] 25. Geocoding for typed addresses through Amazon Location Service Places, behind the travel adapter
