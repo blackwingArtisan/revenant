@@ -6,9 +6,13 @@
   "permissions": {
     "rules": [
       { "capability": "fs_write", "match": ["src/engine/**", "tests/unit/**", ".kiro/specs/**"], "effect": "allow" },
-      { "capability": "shell", "match": ["npm test", "npm run check", "npm run -s check:engine", "npx vitest *"], "effect": "allow" },
+      { "capability": "shell", "match": ["npm test", "npm run check", "npm run -s check:engine", "npm run -s check:trace", "npx vitest *"], "effect": "allow" },
       { "capability": "shell", "match": ["npm install*", "npm i *", "git push*"], "effect": "deny" }
     ]
+  },
+  "hooks": {
+    "preToolUse": [{ "matcher": "fs_write", "command": "node scripts/hooks/engine-write-guard.mjs" }],
+    "stop": [{ "command": "npm run -s check" }]
   },
   "resources": [
     "file://.kiro/steering/product.md",

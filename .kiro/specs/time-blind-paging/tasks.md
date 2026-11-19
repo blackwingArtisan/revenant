@@ -3,7 +3,7 @@
 - [x] 1. Zoned time helpers with DST gap and overlap rules, day keys, 23/25-hour days (Req 1.6, 1.7, 3.7)
   - [x] 1.1 Unit tests: Chicago winter/summer, spring-forward gap, fall-back overlap, Kolkata half-hour offset
 - [x] 2. Types, numeric codes and the wallet code card (Req 6.1)
-- [x] 3. Planner: get-ready and leave-now lead times, honesty factor, buffer, default travel, video calls (Req 1.1-1.4, 1.8, 1.9)
+- [x] 3. Planner: get-ready and leave-now lead times, honesty factor, buffer, default travel, video calls (Req 1.1-1.4, 1.8-1.10)
   - [x] 3.1 Unit tests for each lead-time rule and the DST lead-time case
 - [x] 4. Origin chaining from the previous appointment, with a route cache (Req 1.5)
 - [x] 5. Escalation repeats with cutoffs; page status; next alert time (Req 2.1, 2.3, 2.7)
@@ -12,9 +12,9 @@
 - [x] 7. Daily budget with ranking and pinning; digest items and the silent digest page (Req 3.1-3.5, 3.7)
   - [x] 7.1 Unit tests for ranking, pinning, low priority, all-day, per-day budgets, digest timing
 - [x] 8. Body double: focus start, check-ins, wrap-up, riders follow the start page (Req 4.1-4.4, 4.6, 4.7)
-- [x] 9. iCalendar reader: unfolding, params, escapes, durations, GEO, cancelled, nested components (Req 5.2, 5.4)
-- [x] 10. Recurrence: DAILY, WEEKLY with BYDAY, MONTHLY, INTERVAL, COUNT, UNTIL, EXDATE, RECURRENCE-ID (Req 5.3)
-- [x] 11. Import: place matching, video links, GEO places, merge that keeps tuned prep and priority (Req 5.5, 5.6)
+- [x] 9. iCalendar reader: unfolding, params, escapes, durations, GEO, cancelled, nested components (Req 5.2, 5.4, 5.8-5.10, 5.13)
+- [x] 10. Recurrence: DAILY, WEEKLY with BYDAY, MONTHLY, INTERVAL, COUNT, UNTIL, EXDATE, RECURRENCE-ID (Req 5.3, 5.11, 5.12)
+- [x] 11. Import: place matching, video links, GEO places, merge that keeps tuned prep and priority (Req 5.5, 5.6, 5.14-5.17)
   - [x] 11.1 Unit tests for every parse and import rule, including weekly across fall-back
 - [x] 12. Adapters: SimClock, straight-line and relay travel, browser and relay channels, guarded store, env selection (Req 7.1, 7.7, 7.9, 8.1-8.3, 8.9)
 - [x] 13. Relay: Location CalculateRoutes, End User Messaging SMS, Scheduler schedules and ACK cleanup, shared secret (Req 8.2-8.6, 8.8)
@@ -22,7 +22,7 @@
 - [ ] 14. Pager UI: LCD, LED, chirp, buttons, keys, live region, message memory with 666 for missed pages (Req 6.1-6.3, 6.10-6.15, 2.9)
   - [x] 14.1 LCD code and text, live region, ACK by button and key A, READ button, 666 from message memory (Req 6.1, 6.2, 6.3, 6.14, 2.9); covered by `pager.spec.ts`
   - [ ] 14.2 Tests for the LED, the chirp (skipped when muted), the MUTE button, vibration, and the R and M keys (Req 6.10-6.13, 6.15); the code exists, no test asserts it
-- [x] 15. Time machine: pause, jumps, next page, speeds, run the day, pause on beep at the exact page time (Req 7.1, 7.2)
+- [x] 15. Time machine: pause, jumps, next page, speeds, run the day, pause on beep at the exact page time (Req 7.1, 7.2, 7.8)
 - [x] 16. Rewind: travelling back forgets future beeps and ACKs (Req 7.3)
 - [x] 17. Day sheet (greenbar paper), budget meter, digest list, add form, import panel, settings and places (Req 3, 5.1, 5.7)
 - [x] 18. Service worker: app shell cache, notification ACK action relayed to the app (Req 6.4)
@@ -31,11 +31,11 @@
 - [x] 21. Persistence across reloads (Req 6.7)
 - [x] 22. Playwright end-to-end suite on the production build, desktop and phone (Req 1-7)
   - [x] 22.1 Accessibility: axe-core WCAG 2.1 A/AA scan while paging, reduced-motion check (Req 6.2, 6.6)
-- [x] 23. Relay schedule sync from the app: send future beeps to `/schedule` on plan change when `VITE_CHANNEL=relay`, withdraw moved or removed pages, never from the time machine (Req 8.4, 8.7, 8.11, 8.12)
+- [x] 23. Relay schedule sync from the app: send future beeps to `/schedule` on plan change when `VITE_CHANNEL=relay`, withdraw moved or removed pages, never from the time machine, and withdraw a page's pending repeats on ACK (Req 8.4, 8.7, 8.10-8.12)
   - [x] 23.1 Unit tests for the schedule diff, the channel's `/schedule` call, and the relay replacing an existing schedule
 - [x] 24. First-impression fixes from the clean-clone review
   - [x] 24.1 LCD message shows its start, holds, then scrolls only when it overflows (Req 6.8, 6.17, 6.18)
-  - [x] 24.2 "Watch a day in about a minute" button above the fold; ACK resumes a paused day run (Req 7.5, 7.6)
+  - [x] 24.2 "Watch a day in about a minute" button above the fold; ACK resumes a paused day run (Req 7.5, 7.6, 7.14)
   - [x] 24.3 End-to-end tests for the service worker: notification with an ACK action relayed to the app, and the offline shell (Req 6.4, 6.9, 6.16)
   - [x] 24.4 Wallet card headings end in exactly one stop, with a unit test
   - [x] 24.5 A fast run stops on the first page in a clock step, not on a repeat that came due later in the same step (Req 7.2)
@@ -68,3 +68,4 @@
 - [x] 39. Media and the social card: `scripts/capture-media.mjs` captures the demo GIF and stills in `docs/media/` and `public/og.png` from the production build; `og:` and `twitter:` tags in `src/app/index.html`; an end-to-end check that the card is served at 1200 x 630
 - [x] 40. Phone fit: the one-column layout stretches and the LCD line may shrink, so a long message cannot widen the pager past a 360-412 px screen; an end-to-end bounding-box check on the idle, running and 666 screens in `phone.spec.ts` (Req 6.30)
 - [x] 41. A demo day in 60 seconds: stops outside the budget hold for 1.5 s and resume by themselves (`AUTO_RESUME_MS` in `usePager.ts`), the CTA reads "Watch a day (60 s)", and an end-to-end test in `demo.spec.ts` allows at most 7 ACK presses and 75 s of wall time (Req 7.5, 7.6, 7.15)
+- [x] 42. Hooks and checks that tie the work to the spec: `tests/unit/traceability.test.ts` (every EARS criterion claimed by a task, every task naming real criteria, no checked task with an open sub-task), run by the Stop hook through `npm run check` and by the new post-task hook `task-done-tests.json`; a PreToolUse write guard (`engine-write-guard.json`, `scripts/hooks/engine-write-guard.mjs`) that blocks engine writes adding the clock, randomness, storage, network, browser globals or outside imports, sharing its rules with the purity test; the same guard on the `revenant-engine` agent; unit tests in `tests/unit/hooks.test.ts`; and a GitHub Actions workflow that runs the typecheck, unit and end-to-end suites

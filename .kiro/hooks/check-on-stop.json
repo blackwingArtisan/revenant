@@ -3,7 +3,7 @@
   "hooks": [
     {
       "name": "Typecheck and unit tests on stop",
-      "description": "When the agent finishes a turn, run the typecheck and the unit suite so every turn ends green.",
+      "description": "When the agent finishes a turn, run the typecheck and the unit suite, including the spec traceability test, so every turn ends green.",
       "trigger": "Stop",
       "action": {
         "type": "command",

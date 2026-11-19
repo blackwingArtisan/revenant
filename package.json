@@ -19,6 +19,7 @@
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm test",
     "check:engine": "vitest run tests/unit/purity.test.ts",
+    "check:trace": "vitest run tests/unit/traceability.test.ts",
     "demo:ready": "playwright test tests/e2e/demo.spec.ts --project=desktop"
   },
   "dependencies": {

@@ -12,10 +12,10 @@
 
 | Kiro feature | In this repo | Proof |
 |---|---|---|
-| Spec (EARS) | 10 requirements, 145 acceptance criteria, design with a threat model, 41 tasks mapped to criteria | [`.kiro/specs/time-blind-paging/`](.kiro/specs/time-blind-paging) |
+| Spec (EARS) | 10 requirements, 145 acceptance criteria, design with a threat model, 42 tasks mapped to criteria, and a test that fails if a criterion has no task | [`.kiro/specs/time-blind-paging/`](.kiro/specs/time-blind-paging) |
 | Spec task execution | Kiro built the late-ACK learner and the geocoder from open tasks 25 and 26, and its own test caught a bug it then fixed | [Session A](docs/kiro-sessions/2026-11-19-session-a.md) |
 | Steering | product, tech and structure: the paging rules and the pure-engine rule | [`.kiro/steering/`](.kiro/steering) |
-| Hooks | 6: tests on save, a paging-rules guard, an engine-purity guard, typecheck on stop, code-card sync, demo ready | [`.kiro/hooks/`](.kiro/hooks) |
+| Hooks | 8: a PreToolUse guard that blocks `Date.now` and `Math.random` in the engine, tests on save, a paging-rules agent hook, a purity check, a post-task traceability check, checks on stop, code-card sync, demo ready | [`.kiro/hooks/`](.kiro/hooks) |
 | Custom agent | `revenant-engine`, limited to the engine, its tests and the spec | [`.kiro/agents/`](.kiro/agents) |
 | MCP | AWS Documentation and Context7 | [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json) |
 
@@ -170,12 +170,12 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-175 unit tests (Vitest) and 30 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
+194 unit tests (Vitest) and 30 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone. [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the same suites on every push.
 
 <details>
 <summary><strong>What the tests cover</strong></summary>
 
-- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history, end-of-day report and 666 haunting, the before/after comparison with a time-to-leave alert, engine purity (no clock, randomness, storage, network or outside imports in `src/engine`), the power-on timeline, the vibration rhythm, the DST-correct day bar, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
+- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history, end-of-day report and 666 haunting, the before/after comparison with a time-to-leave alert, engine purity (no clock, randomness, storage, network or outside imports in `src/engine`), the Kiro write guard that blocks such writes and every hook file, spec traceability (every EARS criterion claimed by a task), the power-on timeline, the vibration rhythm, the DST-correct day bar, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
 - **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`, its RIP stamp and the end-of-day haunting that ACK lays to rest; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the power-on sequence frame by frame, and skipped under reduced motion; vibration in the chirp's rhythm; field-level form errors; the demo button above the fold at 390 px; the whole pager inside the screen at 360, 390 and 412 px on the idle, running and 666 screens; the day bar's playhead, the now-line and the ember edge on a loud `911`; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt in at most 7 ACK presses and 75 seconds; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; the app shell opening offline; and the 1200 x 630 social card behind the link preview.
 </details>
 

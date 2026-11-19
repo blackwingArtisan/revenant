@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Engine write guard",
+      "description": "Before the agent writes a file under src/engine, refuse the write if it adds Date.now, Math.random, storage, network or browser globals, or an import from outside the engine. Exit code 2 blocks the write and tells the agent why.",
+      "trigger": "PreToolUse",
+      "matcher": "fs_write",
+      "action": {
+        "type": "command",
+        "command": "node scripts/hooks/engine-write-guard.mjs"
+      },
+      "timeout": 10,
+      "enabled": true
+    }
+  ]
+}

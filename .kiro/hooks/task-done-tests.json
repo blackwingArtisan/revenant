@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Task done: trace and test",
+      "description": "When a spec task finishes, check that every EARS criterion is still claimed by a task and every task names real criteria, then run the unit tests.",
+      "trigger": "PostTaskExec",
+      "action": {
+        "type": "command",
+        "command": "npm run -s check:trace && npm test"
+      },
+      "timeout": 180,
+      "enabled": true
+    }
+  ]
+}
