@@ -325,9 +325,11 @@ kbd {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* Stretch, so a long LCD line cannot widen the pager past a phone's edge. */
   .layout {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     max-width: 640px;
   }
   /* On one column, the day sheet comes straight after the pager. */
@@ -336,6 +338,13 @@ kbd {
   }
   .pager-wrap {
     order: 1;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
+  }
+  .lcd-ticker,
+  .lcd-text {
+    min-width: 0;
   }
   .keys {
     order: 2;

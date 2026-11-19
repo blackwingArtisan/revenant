@@ -30,3 +30,31 @@ test('at 390 px the demo button is above the fold and keyboard hints are hidden'
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(390);
 });
+
+// The page clips horizontal overflow (`overflow-x: clip`), so scrollWidth cannot see a pager
+// that is wider than the screen. Measure the device itself on each screen a judge will see.
+for (const width of [360, 390, 412]) {
+  test(`at ${width} px the whole pager fits on the idle, running and 666 screens`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const fits = async (screen: string) => {
+      const box = await page.locator('.pager').boundingBox();
+      const inner = await page.evaluate(() => window.innerWidth);
+      expect(box!.x, `${screen}: left edge`).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width, `${screen}: right edge`).toBeLessThanOrEqual(inner);
+      const ticker = await page.locator('.lcd-ticker').boundingBox();
+      expect(ticker!.x + ticker!.width, `${screen}: LCD line`).toBeLessThanOrEqual(box!.x + box!.width);
+    };
+
+    await page.goto('/?fresh&at=2026-11-19T05:00&tz=America/Chicago');
+    await fits('idle');
+
+    await page.getByTestId('demo-cta').click();
+    await expect(page.locator('.pager')).toHaveAttribute('data-state', /^(paging|quiet)$/, { timeout: 20_000 });
+    await fits('running');
+
+    await page.goto('/?sample&fresh&at=2026-11-19T23:00&tz=America/Chicago');
+    await page.getByRole('button', { name: /^Acknowledge/ }).first().click();
+    await expect(page.locator('.pager')).toHaveAttribute('data-state', 'haunted');
+    await fits('666');
+  });
+}

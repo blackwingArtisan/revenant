@@ -2,6 +2,7 @@
 //
 //   npm run build && npm run preview          # serves on port 3151
 //   node scripts/capture-media.mjs            # or pass another base URL
+//   node scripts/capture-media.mjs http://localhost:3151 phone   # only the named shots
 //
 // Writes docs/media/*.png, docs/media/demo.gif (needs ffmpeg on the PATH) and
 // public/og.png. Everything shown is the invented sample day.
@@ -12,6 +13,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const BASE = process.argv[2] ?? 'http://localhost:3151';
+// Optional comma-separated list of shots to take: og, desktop, phone, gif. Default: all.
+const ONLY = process.argv[3]?.split(',');
+const want = (shot) => !ONLY || ONLY.includes(shot);
 const MEDIA = 'docs/media';
 const TZ = 'tz=America/Chicago';
 mkdirSync(MEDIA, { recursive: true });
@@ -27,7 +31,7 @@ async function page(options = desktop) {
 // The dentist's leave-now page while it repeats, with the LED lit and the ember edge on.
 const MID_PAGE = `/?sample&fresh&at=2026-11-19T10:11&${TZ}`;
 
-{
+if (want('og')) {
   // Social card, 1200 x 630: the logo, the pitch and the pager mid-page.
   const { context, page: p } = await page({ ...desktop, viewport: { width: 1200, height: 630 } });
   await p.goto(BASE + MID_PAGE);
@@ -43,7 +47,7 @@ const MID_PAGE = `/?sample&fresh&at=2026-11-19T10:11&${TZ}`;
   await context.close();
 }
 
-{
+if (want('desktop')) {
   // The first screen on a desktop, mid-page.
   const { context, page: p } = await page();
   await p.goto(BASE + MID_PAGE);
@@ -60,18 +64,18 @@ const MID_PAGE = `/?sample&fresh&at=2026-11-19T10:11&${TZ}`;
   await context.close();
 }
 
-{
-  // A phone: the pager is scrolled away and the docked mini pager carries a large ACK.
+if (want('phone')) {
+  // A phone mid-page: the whole pager on screen, with its LCD line inside the device.
   const { context, page: p } = await page({ ...devices['Pixel 7'], timezoneId: 'America/Chicago', colorScheme: 'dark' });
-  await p.goto(BASE + `/?sample&fresh&at=2026-11-19T10:00&${TZ}`);
-  await p.getByRole('button', { name: 'Next page' }).click();
-  await p.getByTestId('dock').waitFor();
+  await p.goto(BASE + MID_PAGE);
+  await p.getByTestId('lcd-code').filter({ hasText: '911 911' }).waitFor();
+  await p.locator('.pager').evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await p.waitForTimeout(400);
   await p.screenshot({ path: join(MEDIA, 'phone.png') });
   await context.close();
 }
 
-{
+if (want('gif')) {
   // The one-press demo as a GIF: 411, 911, a repeat, and ACK keeping the day running.
   const videoDir = mkdtempSync(join(tmpdir(), 'revenant-video-'));
   const size = { width: 1280, height: 760 };
