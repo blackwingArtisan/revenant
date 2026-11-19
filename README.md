@@ -12,7 +12,7 @@
 - **Six beeps a day, not fifty-six.** A hard daily budget. Everything else goes into one silent `100` digest.
 - **Repeats until you ACK.** `911 911`, then `NOW!!`, and it learns from the pages you answer late.
 
-**Kiroween 2026, category Resurrection.** *What died:* the pager, a device that was trusted because it was almost always silent. *What came back:* its behaviour, not just its look: numeric codes, a strict silence budget, repeats until ACK, and pages you ignore coming back as `666`.
+**Kiroween 2026, category Resurrection.** *What died:* the pager, a device that was trusted because it was almost always silent. *What came back:* its behaviour, not just its look: numeric codes, a strict silence budget, repeats until ACK, and pages you ignore coming back to haunt you as `666`.
 
 ## One morning, before and after
 Maya, 34, is an illustrative persona, not a real user. Dentist at 10:30 AM, 22 minutes away; she says getting ready takes 20 minutes. The times below are computed by the engine (`src/engine/compare.ts`, checked in `tests/unit/compare.test.ts`) and shown in the app above the day sheet.
@@ -99,6 +99,7 @@ The engine is pure: each tick the app asks it "given these pages, these ACKs and
 - **Travel from where you will be.** Straight-line distance at a per-mode speed, chained from the previous appointment if it ends within three hours, else from home. Video calls say `JOIN` with no travel.
 - **Typed addresses get real travel times.** An address typed on the add form that matches no saved place becomes a place and is looked up once. By default only saved places are known, so an unknown address keeps the default travel time and coordinates are never invented; with the relay, Amazon Location Service Places finds them.
 - **Escalation until ACK.** Unanswered pages repeat at +3, +6 and +10 minutes (`911 911`, `911 911 911`) and stop at the cutoff. ACK cancels every later repeat. Missed pages come back from message memory as `666`.
+- **Pages you ignore come back to haunt you.** Once the day is over, anything you missed returns as one silent `666` recap ("HAUNTING: 2 SLIPPED TODAY ..."), with the LCD ghosting at full strength. It never beeps and never touches the budget; ACK lays it to rest. On the day sheet, missed pages get a tombstone stamp: `RIP 9:25`.
 - **A strict daily budget.** At most N beeping pages per local day (default 6), ranked must > normal, leave-now > focus > get-ready. Cut and low-priority items go into one silent `100` digest.
 - **Learns from late ACKs.** If the leave-now page for a routine (the same title at the same place) was ACK'd late, or missed, in 2 of the last 3 times, the day sheet suggests more prep: "You often ACK this one late. Try 40 min prep instead of 30." Nothing changes until you press Apply, and Dismiss hides it. It moves the existing get-ready page and never adds a beep.
 - **Body double.** Focus blocks page `121` to start, check in on a cadence ("STILL ON QUARTERLY TAXES? 95 MIN LEFT") and `200` to wrap up.
@@ -123,7 +124,7 @@ The engine is pure: each tick the app asks it "given these pages, these ACKs and
 | `121` | Body double: start, or check in on, a focus block. |
 | `200` | Wrap up: the focus block is over. |
 | `100` | Digest: one quiet page with everything that did not earn a beep. |
-| `666` | Missed: a page nobody answered. |
+| `666` | Missed: a page nobody answered, and the end-of-day haunting that lists them. |
 | `07734` | hELLO (turn it upside down). |
 
 ## Run it
@@ -145,13 +146,13 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-152 unit tests (Vitest) and 25 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
+155 unit tests (Vitest) and 25 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
 
 <details>
 <summary><strong>What the tests cover</strong></summary>
 
-- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history and end-of-day report, the before/after comparison, the power-on timeline and the vibration rhythm, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
-- **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the power-on sequence frame by frame, and skipped under reduced motion; vibration in the chirp's rhythm; field-level form errors; the demo button above the fold at 390 px; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
+- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history, end-of-day report and 666 haunting, the before/after comparison, the power-on timeline and the vibration rhythm, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
+- **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`, its RIP stamp and the end-of-day haunting that ACK lays to rest; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the power-on sequence frame by frame, and skipped under reduced motion; vibration in the chirp's rhythm; field-level form errors; the demo button above the fold at 390 px; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
 </details>
 
 ## Built with Kiro

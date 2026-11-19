@@ -69,13 +69,25 @@ test('an unanswered page goes moot and comes back from memory as 666', async ({ 
   await expect(code(page)).toHaveText('911');
 
   await page.getByRole('button', { name: '+1 hr' }).click();
-  await expect(pager(page)).toHaveAttribute('data-state', 'idle');
   await expect(page.locator('[data-page-id$=":leave-now"]')).toHaveAttribute('data-status', 'missed');
+  await expect(page.getByTestId('rip')).toHaveText('Missed. RIP 8:42');
+
+  // The day is over with a page missed, so it comes back to haunt: one silent 666 recap, no beep.
+  await expect(pager(page)).toHaveAttribute('data-state', 'haunted');
+  await expect(code(page)).toHaveText('666');
+  await expect(page.getByTestId('lcd-text')).toHaveText('HAUNTING: 1 SLIPPED TODAY. LEAVE NOW: PHARMACY @ 9:00A. 13 MIN AWAY');
+  await expect(pager(page)).toHaveAttribute('data-beeps', '1');
 
   await page.getByRole('button', { name: 'READ' }).click();
   await expect(pager(page)).toHaveAttribute('data-state', 'reading');
   await expect(code(page)).toHaveText('666');
   await expect(page.getByTestId('lcd-text')).toHaveText('MISSED: LEAVE NOW: PHARMACY @ 9:00A. 13 MIN AWAY');
+
+  // Back out of memory: still haunted. ACK lays it to rest.
+  await page.getByRole('button', { name: 'Acknowledge', exact: true }).click();
+  await expect(pager(page)).toHaveAttribute('data-state', 'haunted');
+  await page.getByRole('button', { name: 'Acknowledge and lay the 666 recap to rest' }).click();
+  await expect(pager(page)).toHaveAttribute('data-state', 'idle');
 });
 
 test('the daily budget caps beeps and folds the rest into one quiet digest', async ({ page }) => {

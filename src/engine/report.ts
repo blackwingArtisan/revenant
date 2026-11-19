@@ -1,5 +1,6 @@
 import { pageStatus, type Acks } from './alerts';
 import { ackLevel } from './learn';
+import { MISSED_CODE } from './codes';
 import type { DayPlan } from './types';
 
 export interface DayReport {
@@ -42,4 +43,38 @@ export function dayReport(day: DayPlan, acks: Acks, now: number): DayReport | nu
 /** "That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed." */
 export function dayReportLine(r: DayReport): string {
   return `That was your day: ${r.beeps} beep${r.beeps === 1 ? '' : 's'}, ${r.keptQuiet} kept quiet in the digest, ${r.missed} missed.`;
+}
+
+export interface Haunting {
+  /** Stable per day, so dismissing it once keeps it dismissed. */
+  id: string;
+  dayKey: string;
+  /** When it appears: the moment the last beeping page of the day went moot. */
+  at: number;
+  code: string;
+  /** Upper-case LCD text listing what slipped. */
+  text: string;
+  /** Ids of the missed pages, in fire order. */
+  pageIds: string[];
+}
+
+/**
+ * Pages you ignore come back to haunt you. Once the day is over (the same
+ * moment as the receipt) and at least one budgeted page was missed, the pager
+ * shows one silent 666 recap of what slipped. It never beeps and never counts
+ * toward the budget. Null on a day with nothing missed. Pure.
+ */
+export function haunting(day: DayPlan, acks: Acks, now: number): Haunting | null {
+  const report = dayReport(day, acks, now);
+  if (!report || report.missed === 0) return null;
+  const loud = day.pages.filter((p) => !p.silent);
+  const missed = loud.filter((p) => p.countsToBudget && pageStatus(p, acks, now) === 'missed').sort((a, b) => a.fireAt - b.fireAt);
+  return {
+    id: `haunting:${day.dayKey}`,
+    dayKey: day.dayKey,
+    at: Math.max(...loud.map((p) => p.cutoffAt)),
+    code: MISSED_CODE,
+    text: `HAUNTING: ${missed.length} SLIPPED TODAY. ${missed.map((p) => p.text).join(' / ')}`,
+    pageIds: missed.map((p) => p.id),
+  };
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ackLevel, suggestPrepTimes } from '../../src/engine/learn';
 import { planDays } from '../../src/engine/plan';
-import { dayReport, dayReportLine } from '../../src/engine/report';
+import { dayReport, dayReportLine, haunting } from '../../src/engine/report';
 import { isSampleHistory, sampleDay, sampleHistory, sampleWithHistory, SAMPLE_PLACES } from '../../src/engine/sample';
 import { addDays } from '../../src/engine/time';
 import { appt, at, M, PLACES, settings, TZ } from './helpers';
@@ -65,5 +65,35 @@ describe('sample history', () => {
     expect(rest).toEqual([]);
     expect(s).toMatchObject({ title: "Dinner at Morgan's", currentPrepMinutes: 30, suggestedPrepMinutes: 40, lateCount: 2, sampled: 2, commitmentId: 'sample-history-dinner-7' });
     expect(s!.commitmentIds).toContain('sample-dinner');
+  });
+});
+
+describe('the 666 haunting', () => {
+  const commitments = [appt({ id: 'a', start: at(DAY, 10, 30) }), appt({ id: 'b', start: at(DAY, 14, 0), priority: 'low' })];
+  const day = () => planDays({ commitments, places: PLACES, settings: settings(), travelMinutes: {}, dayKeys: [DAY] }).days[0]!;
+
+  it('stays away on a day with nothing missed, and while the day is still running', () => {
+    const d = day();
+    const acks = Object.fromEntries(d.pages.filter((p) => !p.silent).map((p) => [p.id, p.fireAt]));
+    expect(haunting(d, acks, at(DAY, 23))).toBeNull();
+    expect(haunting(d, {}, at(DAY, 6))).toBeNull();
+  });
+
+  it('comes back as one silent 666 listing what slipped, once the last page goes moot', () => {
+    const d = day();
+    const ready = d.pages.find((p) => p.kind === 'get-ready')!;
+    const leave = d.pages.find((p) => p.kind === 'leave-now')!;
+    const h = haunting(d, { [ready.id]: ready.fireAt }, at(DAY, 23))!;
+    expect(h).toMatchObject({ id: `haunting:${DAY}`, code: '666', pageIds: [leave.id] });
+    expect(h.text).toBe(`HAUNTING: 1 SLIPPED TODAY. ${leave.text}`);
+    expect(h.at).toBe(Math.max(...d.pages.filter((p) => !p.silent).map((p) => p.cutoffAt)));
+  });
+
+  it('lists every missed page in fire order and is deterministic', () => {
+    const d = day();
+    const a = haunting(d, {}, at(DAY, 23))!;
+    expect(a.text.startsWith('HAUNTING: 2 SLIPPED TODAY.')).toBe(true);
+    expect(a.pageIds).toEqual(d.pages.filter((p) => !p.silent && p.countsToBudget).map((p) => p.id));
+    expect(haunting(d, {}, at(DAY, 23))).toEqual(a);
   });
 });

@@ -106,7 +106,13 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
                     <span className="page-text">{p.text}</span>
                     {p.escalateAt.length > 0 && <span className="page-esc">repeats {p.escalateAt.length}x until ACK</span>}
                   </span>
-                  <span className={`stamp stamp--${status}`}>{p.silent && status !== 'acked' ? (status === 'scheduled' ? 'Quiet' : 'Unread') : STATUS_LABEL[status]}</span>
+                  {status === 'missed' && !p.silent ? (
+                    <span className="stamp stamp--missed" data-testid="rip">
+                      <span className="sr-only">Missed. </span>RIP {readableClock(p.fireAt, tz).replace(/ (AM|PM)$/, '')}
+                    </span>
+                  ) : (
+                    <span className={`stamp stamp--${status}`}>{p.silent && status !== 'acked' ? (status === 'scheduled' ? 'Quiet' : 'Unread') : STATUS_LABEL[status]}</span>
+                  )}
                 </li>
               );
             })}

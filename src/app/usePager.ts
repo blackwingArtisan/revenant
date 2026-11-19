@@ -12,7 +12,7 @@ import { icsToCommitments, mergeCommitments } from '../engine/importer';
 import { suggestPrepTimes, type PrepSuggestion } from '../engine/learn';
 import { planDays } from '../engine/plan';
 import { acknowledge, activePages, emptyRuntimeState, firstDueBetween, pinnedPageIds, rewind, tick, type RuntimeState } from '../engine/runtime';
-import { dayReport as computeDayReport, dayReportLine, type DayReport } from '../engine/report';
+import { dayReport as computeDayReport, dayReportLine, haunting as computeHaunting, type DayReport } from '../engine/report';
 import { defaultSettings, sampleWithHistory, SAMPLE_PLACES } from '../engine/sample';
 import { addDays, DAY, HOUR, isValidTimeZone, localDayKey, parseDayKey, startOfDay, zonedToEpoch } from '../engine/time';
 import type { Commitment, PageStatus, Place, PlannedPage, Settings } from '../engine/types';
@@ -116,6 +116,8 @@ export function usePager() {
   const [travel, setTravel] = useState<Record<string, number>>({});
   const [beeps, setBeeps] = useState(0);
   const [readIndex, setReadIndex] = useState<number | null>(null);
+  const readIndexRef = useRef(readIndex);
+  readIndexRef.current = readIndex;
   const [sound, setSound] = useState(true);
   const [stopOnBeep, setStopOnBeep] = useState(true);
   const [announcement, setAnnouncement] = useState('');
@@ -265,11 +267,25 @@ export function usePager() {
     setAnnouncement(dayReportLine(report));
   }, [report, clock, setDayRun]);
 
+  // Missed pages come back once the day is over as one silent 666 recap, until ACK lays it to rest.
+  const haunt = useMemo(() => computeHaunting(plan.days[0]!, runtime.acks, now), [plan, runtime.acks, now]);
+  const [laidToRest, setLaidToRest] = useState<string | null>(null);
+  const haunting = haunt && haunt.id !== laidToRest && haunt.at <= now ? haunt : null;
+  const hauntingRef = useRef(haunting);
+  hauntingRef.current = haunting;
+  useEffect(() => {
+    if (haunting && !dayRunRef.current) setAnnouncement(`Page ${haunting.code}. ${haunting.text}`);
+  }, [haunting?.id]);
+
   const ack = useCallback(
     (pageId?: string) => {
       unlockAudio();
       const target = pageId ?? activePages(plan.pages, runtimeRef.current, clock.now())[0]?.id;
       if (!target) {
+        if (hauntingRef.current && readIndexRef.current === null) {
+          setLaidToRest(hauntingRef.current.id);
+          setAnnouncement('Laid to rest.');
+        }
         setReadIndex(null);
         return;
       }
@@ -484,6 +500,7 @@ export function usePager() {
     travel,
     next: nextAlertAt(plan.pages, runtime.acks, now),
     controls,
+    haunting,
     endCard,
     closeEndCard: () => setEndCard(null),
     demoDay,

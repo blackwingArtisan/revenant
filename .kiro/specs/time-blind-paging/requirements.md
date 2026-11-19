@@ -119,6 +119,9 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 6.21 WHERE the device supports vibration, WHEN a page beeps, THE SYSTEM SHALL vibrate in the rhythm of the chirp, with more pulses at each escalation level.
 6.22 IF the add form is submitted with a missing or invalid field, THEN THE SYSTEM SHALL mark that field invalid, outline it and move focus to it.
 6.23 WHERE the device has no hover-capable pointer, THE SYSTEM SHALL hide the keyboard hints.
+6.24 WHEN every beeping page of the day has been answered or has gone moot and at least one budgeted page was missed, THE SYSTEM SHALL show one silent 666 recap listing the missed pages, without a beep and without counting toward the daily budget.
+6.25 WHEN the user presses ACK while the 666 recap is showing and no page is beeping, THE SYSTEM SHALL dismiss the recap for that day.
+6.26 WHEN the day sheet shows a missed beeping page, THE SYSTEM SHALL stamp it with "RIP" and the time it fired.
 
 ## Requirement 7: Time machine
 **User story:** As a presenter or tester, I want to drive the clock, so that a whole day can be shown in a minute.

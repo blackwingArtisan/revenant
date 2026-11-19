@@ -87,7 +87,8 @@ export function Pager({ pager, boot = null }: { pager: PagerApi; boot?: BootPhas
   const memoryStatus = readIndex !== null && shown ? (pager.runtime.acks[shown.pageId] !== undefined ? 'ACK' : 'NEW') : null;
 
   const booting = boot !== null && !paging && readIndex === null;
-  const state = booting ? 'booting' : readIndex !== null ? 'reading' : paging ? (loud ? 'paging' : 'quiet') : 'idle';
+  const haunted = !booting && !paging && readIndex === null ? pager.haunting : null;
+  const state = booting ? 'booting' : readIndex !== null ? 'reading' : paging ? (loud ? 'paging' : 'quiet') : haunted ? 'haunted' : 'idle';
   const level = shown?.level ?? 0;
 
   let code = '';
@@ -105,6 +106,10 @@ export function Pager({ pager, boot = null }: { pager: PagerApi; boot?: BootPhas
     code = shown.code;
     text = shown.text;
     corner = shown.silent ? 'QUIET' : level > 0 ? `x${level + 1}` : 'NEW';
+  } else if (haunted) {
+    code = haunted.code;
+    text = haunted.text;
+    corner = 'QUIET';
   } else if (paging && top) {
     code = top.code;
     text = top.text;
@@ -116,11 +121,14 @@ export function Pager({ pager, boot = null }: { pager: PagerApi; boot?: BootPhas
     corner = '';
   }
   const unread = active.length;
-  const ghost = memory[readIndex === null ? (paging ? 1 : 0) : readIndex + 1]?.code ?? '';
+  // The faint previous code behind the digits; a haunting shows its own 666 at full strength.
+  const ghost = haunted ? haunted.code : (memory[readIndex === null ? (paging ? 1 : 0) : readIndex + 1]?.code ?? '');
 
   const label = booting
     ? 'Pager starting up.'
-    : paging
+    : haunted
+      ? `Pager haunted: ${code}. ${text}`
+      : paging
     ? `Pager is paging: ${code}. ${text}`
     : readIndex !== null
       ? `Message ${readIndex + 1} of ${memory.length}: ${code}. ${text}`
@@ -128,7 +136,7 @@ export function Pager({ pager, boot = null }: { pager: PagerApi; boot?: BootPhas
 
   return (
     <section className="pager-wrap" aria-label="Pager">
-      <div ref={deviceRef} className={`pager pager--${state}`} data-state={state} data-boot={booting ? boot : undefined} data-beeps={pager.beeps} data-level={level}>
+      <div ref={deviceRef} className={`pager pager--${state}${code === MISSED_CODE ? ' pager--glitch' : ''}`} data-state={state} data-boot={booting ? boot : undefined} data-beeps={pager.beeps} data-level={level}>
         <div className="pager-clip" aria-hidden="true" />
         <div className="pager-top">
           <span className={`pager-led ${loud || (booting && boot === 'hello') ? 'pager-led--on' : ''}`} aria-hidden="true" />
@@ -174,7 +182,7 @@ export function Pager({ pager, boot = null }: { pager: PagerApi; boot?: BootPhas
             className="pbtn pbtn--ack"
             onClick={() => pager.ack()}
             aria-keyshortcuts="a"
-            aria-label={paging ? `Acknowledge page ${code}` : 'Acknowledge'}
+            aria-label={paging ? `Acknowledge page ${code}` : haunted ? 'Acknowledge and lay the 666 recap to rest' : 'Acknowledge'}
             title="Acknowledge (A)"
           >
             ACK
