@@ -1,3 +1,4 @@
+import { dayReportLine } from '../../engine/report';
 import { readableClock } from '../../engine/time';
 import type { DigestItem, PageStatus, PlannedPage } from '../../engine/types';
 import type { PagerApi } from '../usePager';
@@ -24,6 +25,30 @@ const REASON_LABEL: Record<DigestItem['reason'], string> = {
   'over-budget': 'Over budget',
   'all-day': 'All day',
 };
+
+function EndCard({ pager }: { pager: PagerApi }) {
+  const r = pager.endCard;
+  if (!r) return null;
+  return (
+    <section className="receipt" aria-labelledby="receipt-title" data-testid="day-report">
+      <h3 id="receipt-title">End of day</h3>
+      <p className="receipt-line" data-testid="day-report-line">
+        {dayReportLine(r)}
+      </p>
+      <p className="receipt-sub">
+        {r.firstBeep} of {r.beeps} answered on the first beep. Budget used: {r.beeps} of {r.budget}.
+      </p>
+      <span className="advice-actions">
+        <button type="button" className="btn btn--primary" onClick={pager.controls.runDay}>
+          Run the day again
+        </button>
+        <button type="button" className="btn" onClick={pager.closeEndCard}>
+          Close
+        </button>
+      </span>
+    </section>
+  );
+}
 
 function BudgetMeter({ used, limit }: { used: number; limit: number }) {
   return (
@@ -56,6 +81,7 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
           <BudgetMeter used={today.budget.used} limit={today.budget.limit} />
         </header>
 
+        <EndCard pager={pager} />
         <PrepAdvice pager={pager} />
 
         {today.pages.length === 0 ? (

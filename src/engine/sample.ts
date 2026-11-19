@@ -1,4 +1,4 @@
-import { parseDayKey, zonedToEpoch, MINUTE } from './time';
+import { addDays, parseDayKey, zonedToEpoch, MINUTE } from './time';
 import type { Commitment, Place, Settings } from './types';
 
 /** Invented places in an invented town. Coordinates are illustrative. */
@@ -50,23 +50,49 @@ const SAMPLE_DAY: SampleSpec[] = [
   { id: 'dinner', title: "Dinner at Morgan's", at: [19, 30], minutes: 120, placeId: 'morgan', prep: 30, priority: 'normal' },
 ];
 
+function toCommitment(s: SampleSpec, dayKey: string, timeZone: string, id: string): Commitment {
+  const start = zonedToEpoch({ ...parseDayKey(dayKey), hour: s.at[0], minute: s.at[1] }, timeZone);
+  return {
+    id,
+    title: s.title,
+    kind: s.kind ?? 'appointment',
+    start,
+    end: start + s.minutes * MINUTE,
+    placeId: s.placeId,
+    prepMinutes: s.prep,
+    priority: s.priority,
+    checkInEveryMinutes: s.checkIn ?? null,
+    source: 'sample',
+    allDay: s.allDay ?? false,
+  };
+}
+
 /** A realistic, over-full day used by the demo and the tests. */
 export function sampleDay(dayKey: string, timeZone: string): Commitment[] {
-  const date = parseDayKey(dayKey);
-  return SAMPLE_DAY.map((s) => {
-    const start = zonedToEpoch({ ...date, hour: s.at[0], minute: s.at[1] }, timeZone);
-    return {
-      id: `sample-${s.id}`,
-      title: s.title,
-      kind: s.kind ?? 'appointment',
-      start,
-      end: start + s.minutes * MINUTE,
-      placeId: s.placeId,
-      prepMinutes: s.prep,
-      priority: s.priority,
-      checkInEveryMinutes: s.checkIn ?? null,
-      source: 'sample',
-      allDay: s.allDay ?? false,
-    };
-  });
+  return SAMPLE_DAY.map((s) => toCommitment(s, dayKey, timeZone, `sample-${s.id}`));
+}
+
+/** Ids of invented past commitments start with this, so the app can label them as sample history. */
+export const SAMPLE_HISTORY_PREFIX = 'sample-history-';
+/** The weekly dinner also happened this many days before the sample day. */
+export const SAMPLE_HISTORY_DAYS_AGO = [14, 7] as const;
+
+export function isSampleHistory(commitmentId: string): boolean {
+  return commitmentId.startsWith(SAMPLE_HISTORY_PREFIX);
+}
+
+/**
+ * Invented history for the demo: the weekly dinner at Morgan's on the two
+ * previous weeks, with its leave-now page never answered. Two missed pages of
+ * one routine are enough for the learner to suggest more prep time during the
+ * one-minute demo. The app labels these as sample history, never as real use.
+ */
+export function sampleHistory(dayKey: string, timeZone: string): Commitment[] {
+  const dinner = SAMPLE_DAY.find((s) => s.id === 'dinner')!;
+  return SAMPLE_HISTORY_DAYS_AGO.map((n) => toCommitment(dinner, addDays(dayKey, -n), timeZone, `${SAMPLE_HISTORY_PREFIX}dinner-${n}`));
+}
+
+/** The sample day plus its sample history. */
+export function sampleWithHistory(dayKey: string, timeZone: string): Commitment[] {
+  return [...sampleHistory(dayKey, timeZone), ...sampleDay(dayKey, timeZone)];
 }

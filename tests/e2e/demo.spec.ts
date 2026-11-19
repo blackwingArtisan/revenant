@@ -11,6 +11,12 @@ test('one press on an empty pager loads the sample day and runs it, and ACK keep
   await expect(page.getByText('PLAY 900x')).toBeVisible();
   await expect(page.getByTestId('page-row').first()).toBeVisible();
 
+  // The learner has two weeks of labelled sample history, so its card shows from the first second.
+  const suggestion = page.getByTestId('prep-suggestion');
+  await expect(suggestion).toHaveCount(1);
+  await expect(suggestion).toContainText("Dinner at Morgan's. You often ACK this one late. Try 40 min prep instead of 30.");
+  await expect(page.getByTestId('sample-history-note')).toContainText('Sample history');
+
   // First stop: the quiet 7:30 digest. Its message starts at the left edge of the LCD, not clipped.
   await expect(pager(page)).toHaveAttribute('data-state', 'quiet', { timeout: 15_000 });
   await expect(code(page)).toHaveText('100');
@@ -49,4 +55,30 @@ test('a line that fits on the LCD sits still; only an overflowing one scrolls', 
   await expect(page.getByTestId('lcd-text')).toHaveText(/^LEAVE NOW: PARENT-TEACHER CONFERENCE @ 10:30A/);
   await expect(ticker).toHaveAttribute('data-scroll', 'true');
   expect(await anim()).toBe('ticker');
+});
+
+test('the demo day ends on a receipt once every page is answered', async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto('/?fresh&at=2026-11-19T05:00&tz=America/Chicago');
+  await page.getByTestId('demo-cta').click();
+  const report = page.getByTestId('day-report');
+
+  // Answer each page as the run stops on it, then jump to the next one.
+  for (let i = 0; i < 40 && !(await report.isVisible()); i++) {
+    await expect(pager(page)).toHaveAttribute('data-state', /^(paging|quiet)$/, { timeout: 20_000 });
+    await page.keyboard.press('a');
+    if (await report.isVisible()) break;
+    await page.keyboard.press('n');
+  }
+
+  await expect(report).toBeVisible();
+  await expect(page.getByTestId('day-report-line')).toHaveText('That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed.');
+  await expect(report).toContainText('6 of 6 answered on the first beep');
+  await expect(page.getByText('PAUSED')).toBeVisible();
+  await expect(page.getByTestId('announcer')).toHaveText('That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed.');
+
+  // Run it again: the receipt goes away and the day replays from 6 AM.
+  await page.getByRole('button', { name: 'Run the day again' }).click();
+  await expect(report).toHaveCount(0);
+  await expect(page.getByText('PLAY 900x')).toBeVisible();
 });

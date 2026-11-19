@@ -1,3 +1,4 @@
+import { isSampleHistory } from '../../engine/sample';
 import type { PagerApi } from '../usePager';
 
 /**
@@ -16,6 +17,11 @@ export function PrepAdvice({ pager }: { pager: PagerApi }) {
             <p className="advice-text">
               <strong>{s.title}.</strong> You often ACK this one late. Try {s.suggestedPrepMinutes} min prep instead of {s.currentPrepMinutes}.
             </p>
+            {s.commitmentIds.some(isSampleHistory) && (
+              <p className="advice-note" data-testid="sample-history-note">
+                Sample history: the two earlier weeks are invented for the demo, so the learner has something to learn from.
+              </p>
+            )}
             <span className="advice-actions">
               <button type="button" className="btn btn--primary" onClick={() => pager.applyPrepSuggestion(s)} aria-label={`Apply ${s.suggestedPrepMinutes} min prep for ${s.title}`}>
                 Apply

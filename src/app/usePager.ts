@@ -12,7 +12,8 @@ import { icsToCommitments, mergeCommitments } from '../engine/importer';
 import { suggestPrepTimes, type PrepSuggestion } from '../engine/learn';
 import { planDays } from '../engine/plan';
 import { acknowledge, activePages, emptyRuntimeState, firstDueBetween, pinnedPageIds, rewind, tick, type RuntimeState } from '../engine/runtime';
-import { defaultSettings, sampleDay, SAMPLE_PLACES } from '../engine/sample';
+import { dayReport as computeDayReport, dayReportLine, type DayReport } from '../engine/report';
+import { defaultSettings, sampleWithHistory, SAMPLE_PLACES } from '../engine/sample';
 import { addDays, DAY, HOUR, isValidTimeZone, localDayKey, parseDayKey, startOfDay, zonedToEpoch } from '../engine/time';
 import type { Commitment, PageStatus, Place, PlannedPage, Settings } from '../engine/types';
 import { beep, unlockAudio } from './beep';
@@ -56,7 +57,7 @@ function freshSnapshot(timeZone: string): Snapshot {
  *   ?speed=60             run the clock at 60x
  *   ?tz=America/Chicago   time zone for a fresh pager
  *   ?fresh                ignore saved state
- *   ?sample               load the sample day
+ *   ?sample               load the sample day (and its labelled sample history)
  */
 function boot(): Boot {
   const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
@@ -83,7 +84,7 @@ function boot(): Boot {
   if (params.has('speed') && Number.isFinite(speedParam)) speed = Math.max(0, speedParam);
 
   if (params.has('sample')) {
-    snapshot.commitments = mergeCommitments(snapshot.commitments, sampleDay(localDayKey(start, tz), tz));
+    snapshot.commitments = mergeCommitments(snapshot.commitments, sampleWithHistory(localDayKey(start, tz), tz));
   }
   return { clock: new SimClock(start, speed), snapshot };
 }
@@ -141,6 +142,8 @@ export function usePager() {
     dayRunRef.current = on;
     setDayRunState(on);
   }, []);
+  // The end-of-day receipt shown when a day run has answered or missed every page.
+  const [endCard, setEndCard] = useState<DayReport | null>(null);
 
   const tz = settings.timeZone;
   const dayKey = localDayKey(now, tz);
@@ -249,6 +252,17 @@ export function usePager() {
 
   const active = useMemo(() => activePages(plan.pages, runtime, now), [plan, runtime, now]);
 
+  // A day run ends once every beeping page of the day is answered or missed: stop and show the receipt.
+  const report = useMemo(() => computeDayReport(plan.days[0]!, runtime.acks, now), [plan, runtime.acks, now]);
+  useEffect(() => {
+    if (!dayRunRef.current || !report) return;
+    clock.pause();
+    setSpeedState(0);
+    setDayRun(false);
+    setEndCard(report);
+    setAnnouncement(dayReportLine(report));
+  }, [report, clock, setDayRun]);
+
   const ack = useCallback(
     (pageId?: string) => {
       unlockAudio();
@@ -324,6 +338,7 @@ export function usePager() {
       setSpeedState(1);
     },
     runDay: () => {
+      setEndCard(null);
       travelTo(startOfDay(dayKey, tz) + 6 * HOUR);
       setDayRun(true);
       setStopOnBeep(true);
@@ -334,7 +349,7 @@ export function usePager() {
 
   /** One-press demo: load the sample day if the pager is empty, then run it from 6 AM. */
   const demoDay = () => {
-    if (commitments.length === 0) setCommitments((list) => mergeCommitments(list, sampleDay(dayKey, tz)));
+    if (commitments.length === 0) setCommitments((list) => mergeCommitments(list, sampleWithHistory(dayKey, tz)));
     controls.runDay();
   };
 
@@ -384,7 +399,7 @@ export function usePager() {
 
   const loadSample = useCallback(() => {
     unlockAudio();
-    setCommitments((list) => mergeCommitments(list, sampleDay(dayKey, tz)));
+    setCommitments((list) => mergeCommitments(list, sampleWithHistory(dayKey, tz)));
   }, [dayKey, tz]);
 
   const importIcs = useCallback(
@@ -417,6 +432,7 @@ export function usePager() {
     setAdvice(emptyPrepAdvice());
     setReadIndex(null);
     setImportReport(null);
+    setEndCard(null);
     travelCache.current.clear();
   }, [tz, setRuntime]);
 
@@ -466,6 +482,8 @@ export function usePager() {
     travel,
     next: nextAlertAt(plan.pages, runtime.acks, now),
     controls,
+    endCard,
+    closeEndCard: () => setEndCard(null),
     demoDay,
     ack,
     read,

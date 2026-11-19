@@ -1029,6 +1029,33 @@ kbd {
   flex-wrap: wrap;
   gap: 8px;
 }
+.advice-note {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--bone-muted);
+}
+.receipt {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 3px double var(--bone-ink);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.45);
+}
+.receipt h3 {
+  margin: 0 0 6px;
+  font: 900 16px/1.1 var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.receipt-line {
+  margin: 0 0 4px;
+  font: 24px/1.15 var(--font-lcd);
+}
+.receipt-sub {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--bone-muted);
+}
 .sheet-tomorrow {
   margin: 14px 0 0;
   font-size: 13px;
