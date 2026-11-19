@@ -126,6 +126,10 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 6.28 WHILE the clock is on the day the sheet shows, THE SYSTEM SHALL draw a "now" line between the pages already fired and the first page still ahead.
 6.29 WHILE a leave-now (911) page is beeping and the pager is not reading memory, THE SYSTEM SHALL light the edges of the screen in ember, pulsing, or as a still border WHERE the user prefers reduced motion.
 6.30 WHERE the viewport is 360 px wide or wider, THE SYSTEM SHALL keep the whole pager, including its LCD line, inside the viewport on the idle, running and 666 screens.
+6.31 WHEN the user presses "See what happens if you ignore it" on a receipt with nothing missed, THE SYSTEM SHALL replay that day with the first must-go leave-now page unanswered and every other page answered on its first beep, and show the 666 haunting without a beep.
+6.32 WHILE a 666 is on the pager, THE SYSTEM SHALL turn the moon red and thicken the fog.
+6.33 WHEN it is 7 AM or later on the day after a day with budgeted pages that beeped and were missed, THE SYSTEM SHALL show a silent 666 page "666 YESTERDAY: <TITLE>. REBOOK?" until the user chooses Rebook or Let it go, and ACK alone SHALL NOT dismiss it.
+6.34 WHEN the user chooses Rebook, or presses Resurrect on a missed row, THE SYSTEM SHALL add a 15-minute call-to-rebook focus block at 9 AM the day after the miss, or 15 minutes from now if that has passed.
 
 ## Requirement 7: Time machine
 **User story:** As a presenter or tester, I want to drive the clock, so that a whole day can be shown in a minute.

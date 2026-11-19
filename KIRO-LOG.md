@@ -5,7 +5,7 @@ How Revenant uses Kiro: what is in [`/.kiro`](.kiro), what Kiro built, and where
 ## Kiro features at a glance
 | Kiro feature | Where | How it is used | Proof |
 |---|---|---|---|
-| **Spec-driven development** | [`.kiro/specs/time-blind-paging/`](.kiro/specs/time-blind-paging) | 10 requirements with 145 numbered EARS acceptance criteria, a design with algorithms and a threat model, and 42 tasks (34 done, 8 open), each mapped to the criteria it satisfies. A traceability test fails if any criterion is left without a task. | [`requirements.md`](.kiro/specs/time-blind-paging/requirements.md), [`tasks.md`](.kiro/specs/time-blind-paging/tasks.md) |
+| **Spec-driven development** | [`.kiro/specs/time-blind-paging/`](.kiro/specs/time-blind-paging) | 10 requirements with 149 numbered EARS acceptance criteria, a design with algorithms and a threat model, and 44 tasks (36 done, 8 open), each mapped to the criteria it satisfies. A traceability test fails if any criterion is left without a task. | [`requirements.md`](.kiro/specs/time-blind-paging/requirements.md), [`tasks.md`](.kiro/specs/time-blind-paging/tasks.md) |
 | **Spec task execution** | Tasks 25 and 26 | Kiro took two open tasks from the spec to done: it wrote the criteria and design sections first, then the code and tests, then checked the tasks off. | [`src/engine/learn.ts`](src/engine/learn.ts), [`src/adapters/geocode.ts`](src/adapters/geocode.ts), [session A](docs/kiro-sessions/2026-11-19-session-a.md) |
 | **Spec review** | `requirements.md`, `tasks.md` | Kiro rewrote every acceptance criterion into strict EARS form, audited each task against the code and tests, unchecked one that had no test, and added seven gap tasks. | [Session A, "Spec changes"](docs/kiro-sessions/2026-11-19-session-a.md#spec-changes) |
 | **Steering** | [`.kiro/steering/`](.kiro/steering) | `product.md` (the paging rules and the evidence), `tech.md` (the pure-engine rule and the adapters), `structure.md` (where code goes and the checklist for a new page kind). Always included. | The three files |
@@ -28,7 +28,7 @@ How Revenant uses Kiro: what is in [`/.kiro`](.kiro), what Kiro built, and where
 | The late-ACK learner, the geocoder port, both geocoders, the relay's `/geocode` route and their tests | Kiro (session A) |
 | Conversion of four hooks to the current format | Kiro (session A) |
 | Steering, the first spec draft and the first build (engine, pager UI, time machine, .ics import, relay) | The developer, in Kiro's spec format, task by task from `tasks.md` |
-| Everything after session A (tasks 34-42: relay hardening, the receipt, the before/after card, the boot sequence, the 666 haunting, the purity guard, the custom agent, the MCP settings, the phone fit, the 60-second demo, the write guard and the traceability test) | The developer, each recorded as a checked task with its criteria |
+| Everything after session A (tasks 34-44: relay hardening, the receipt, the before/after card, the boot sequence, the 666 haunting, the purity guard, the custom agent, the MCP settings, the phone fit, the 60-second demo, the write guard, the traceability test, and the ignore-it replay with the next morning's rebook page) | The developer, each recorded as a checked task with its criteria |
 | Running the Playwright suite after the session | The developer |
 
 ## Sessions

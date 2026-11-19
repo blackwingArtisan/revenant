@@ -60,7 +60,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app${pager.haunting ? ' app--haunted' : ''}`}>
       {pager.active[0] && !pager.active[0].silent && pager.active[0].code.startsWith('911') && pager.readIndex === null && (
         <div className="alarm" data-testid="alarm" aria-hidden="true" />
       )}

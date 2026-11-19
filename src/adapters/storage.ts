@@ -24,6 +24,8 @@ export interface Snapshot {
   memory: MemoryEntry[];
   /** Optional so snapshots saved before suggestions existed still load. */
   prepAdvice?: PrepAdviceState;
+  /** Ids of the 666 rebook pages already answered (Rebook or Let it go). Optional for older snapshots. */
+  rebooksDone?: string[];
 }
 
 /** Port: where the pager keeps its state. Local storage today; a synced store later. */

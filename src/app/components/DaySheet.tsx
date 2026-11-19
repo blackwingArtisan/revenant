@@ -51,8 +51,57 @@ function EndCard({ pager }: { pager: PagerApi }) {
         <button type="button" className="btn btn--primary" onClick={pager.controls.runDay}>
           Run the day again
         </button>
+        {r.missed === 0 && (
+          <button type="button" className="btn btn--ghost" onClick={pager.ignoreIt} data-testid="ignore-it">
+            See what happens if you ignore it
+          </button>
+        )}
         <button type="button" className="btn" onClick={pager.closeEndCard}>
           Close
+        </button>
+      </span>
+    </section>
+  );
+}
+
+/** The night of a day with missed pages: the haunting, and the way to the next morning. */
+function HauntCard({ pager }: { pager: PagerApi }) {
+  const h = pager.todayHaunt;
+  if (!h || pager.controls.dayRun) return null;
+  return (
+    <section className="advice advice--haunt" aria-labelledby="haunt-title" data-testid="haunt-card">
+      <h3 id="haunt-title">It comes back</h3>
+      <p>
+        {h.pageIds.length === 1 ? 'One page' : `${h.pageIds.length} pages`} slipped today. Pages you ignore do not just disappear: they come back
+        tomorrow morning as a <code>666</code> asking you to rebook.
+      </p>
+      <span className="advice-actions">
+        <button type="button" className="btn btn--primary" onClick={pager.nextMorning} data-testid="next-morning">
+          See the next morning
+        </button>
+      </span>
+    </section>
+  );
+}
+
+/** The morning after: the 666 rebook page waits for an answer. */
+function RebookCard({ pager }: { pager: PagerApi }) {
+  const r = pager.rebookAsk;
+  if (!r) return null;
+  const titles = r.commitmentIds.map((id) => pager.commitments.find((c) => c.id === id)?.title ?? 'A page');
+  return (
+    <section className="advice advice--haunt" aria-labelledby="rebook-title" data-testid="rebook-card">
+      <h3 id="rebook-title">666: yesterday slipped</h3>
+      <p>
+        <strong>{titles.join(', ')}</strong> {titles.length === 1 ? 'was' : 'were'} missed yesterday. Rebook books a 15-minute call to fix{' '}
+        {titles.length === 1 ? 'it' : 'each one'}, paged as <code>121</code>.
+      </p>
+      <span className="advice-actions">
+        <button type="button" className="btn btn--primary" onClick={() => pager.answerRebook(r, 'rebook')}>
+          Rebook
+        </button>
+        <button type="button" className="btn" onClick={() => pager.answerRebook(r, 'let-go')}>
+          Let it go
         </button>
       </span>
     </section>
@@ -95,6 +144,8 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
         </header>
 
         <EndCard pager={pager} />
+        <RebookCard pager={pager} />
+        <HauntCard pager={pager} />
         <PrepAdvice pager={pager} />
 
         {today.pages.length === 0 ? (
@@ -122,8 +173,15 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
                       {p.escalateAt.length > 0 && <span className="page-esc">repeats {p.escalateAt.length}x until ACK</span>}
                     </span>
                     {status === 'missed' && !p.silent ? (
-                      <span className="stamp stamp--missed" data-testid="rip">
-                        <span className="sr-only">Missed. </span>RIP {readableClock(p.fireAt, tz).replace(/ (AM|PM)$/, '')}
+                      <span className="rip">
+                        <span className="stamp stamp--missed" data-testid="rip">
+                          <span className="sr-only">Missed. </span>RIP {readableClock(p.fireAt, tz).replace(/ (AM|PM)$/, '')}
+                        </span>
+                        {p.countsToBudget && p.commitmentId && (
+                          <button type="button" className="btn btn--tiny" onClick={() => pager.resurrect(p.commitmentId!, p.dayKey)} aria-label={`Resurrect: book a call to rebook ${p.text}`}>
+                            Resurrect
+                          </button>
+                        )}
                       </span>
                     ) : (
                       <span className={`stamp stamp--${status}`}>{p.silent && status !== 'acked' ? (status === 'scheduled' ? 'Quiet' : 'Unread') : STATUS_LABEL[status]}</span>

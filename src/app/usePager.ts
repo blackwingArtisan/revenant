@@ -10,11 +10,12 @@ import { nextAlertAt, pageStatus } from '../engine/alerts';
 import { parseIcs } from '../engine/ics';
 import { icsToCommitments, mergeCommitments } from '../engine/importer';
 import { suggestPrepTimes, type PrepSuggestion } from '../engine/learn';
+import { ignoreReplay, pickIgnoreTarget, rebookPage, resurrection, type Rebook } from '../engine/haunt';
 import { planDays } from '../engine/plan';
 import { acknowledge, activePages, emptyRuntimeState, firstDueBetween, pinnedPageIds, rewind, tick, type RuntimeState } from '../engine/runtime';
 import { dayReport as computeDayReport, dayReportLine, haunting as computeHaunting, type DayReport } from '../engine/report';
 import { defaultSettings, sampleWithHistory, SAMPLE_PLACES } from '../engine/sample';
-import { addDays, DAY, HOUR, isValidTimeZone, localDayKey, parseDayKey, startOfDay, zonedToEpoch } from '../engine/time';
+import { addDays, DAY, HOUR, isValidTimeZone, localDayKey, parseDayKey, readableClock, startOfDay, zonedToEpoch } from '../engine/time';
 import type { Commitment, PageStatus, Place, PlannedPage, Settings } from '../engine/types';
 import { beep, unlockAudio, vibrate } from './beep';
 
@@ -117,6 +118,7 @@ export function usePager() {
   const [runtime, setRuntimeState] = useState<RuntimeState>(initial.runtime);
   const [memory, setMemory] = useState<MemoryEntry[]>(initial.memory);
   const [advice, setAdvice] = useState<PrepAdviceState>(initial.prepAdvice ?? emptyPrepAdvice());
+  const [rebooksDone, setRebooksDone] = useState<string[]>(initial.rebooksDone ?? []);
   const [now, setNow] = useState(() => clock.now());
   const [speed, setSpeedState] = useState(clock.speed);
   const [travel, setTravel] = useState<Record<string, number>>({});
@@ -286,8 +288,8 @@ export function usePager() {
 
   // Save everything the user would expect to survive a reload.
   useEffect(() => {
-    store.save({ version: 1, commitments, places, settings, runtime, memory, prepAdvice: advice });
-  }, [commitments, places, settings, runtime, memory, advice]);
+    store.save({ version: 1, commitments, places, settings, runtime, memory, prepAdvice: advice, rebooksDone });
+  }, [commitments, places, settings, runtime, memory, advice, rebooksDone]);
 
   const active = useMemo(() => activePages(plan.pages, runtime, now), [plan, runtime, now]);
 
@@ -305,7 +307,15 @@ export function usePager() {
   // Missed pages come back once the day is over as one silent 666 recap, until ACK lays it to rest.
   const haunt = useMemo(() => computeHaunting(plan.days[0]!, runtime.acks, now), [plan, runtime.acks, now]);
   const [laidToRest, setLaidToRest] = useState<string | null>(null);
-  const haunting = haunt && haunt.id !== laidToRest && haunt.at <= now ? haunt : null;
+  // The morning after a day with missed pages, a 666 asks to rebook them until the user chooses.
+  const yesterday = useMemo(() => historyPlan.days.find((d) => d.dayKey === addDays(dayKey, -1)) ?? null, [historyPlan, dayKey]);
+  const rebookAsk = useMemo<Rebook | null>(() => {
+    if (!yesterday) return null;
+    const r = rebookPage(yesterday, runtime, commitments, tz, minute);
+    return r && !rebooksDone.includes(r.id) ? r : null;
+  }, [yesterday, runtime, commitments, tz, minute, rebooksDone]);
+  const todayHaunt = haunt && haunt.id !== laidToRest && haunt.at <= now ? haunt : null;
+  const haunting = todayHaunt ?? rebookAsk;
   const hauntingRef = useRef(haunting);
   hauntingRef.current = haunting;
   useEffect(() => {
@@ -319,6 +329,11 @@ export function usePager() {
       const target = pageId ?? activePages(plan.pages, runtimeRef.current, clock.now())[0]?.id;
       if (!target) {
         if (hauntingRef.current && readIndexRef.current === null) {
+          if (hauntingRef.current.id.startsWith('rebook:')) {
+            // The morning 666 wants an answer first: Rebook or Let it go, on the day sheet.
+            setAnnouncement('Rebook it or let it go first. Both are on the day sheet.');
+            return;
+          }
           setLaidToRest(hauntingRef.current.id);
           setAnnouncement('Laid to rest.');
         }
@@ -404,6 +419,56 @@ export function usePager() {
     },
   };
 
+  /**
+   * After the receipt: replay the same day with one page ignored (the first
+   * must-go leave-now), and jump to the moment the day is over, when it comes
+   * back as the 666 haunting. Nothing beeps on the way.
+   */
+  const ignoreIt = () => {
+    const day = plan.days[0]!;
+    const target = pickIgnoreTarget(day, commitments);
+    const replay = target ? ignoreReplay(day, target.id) : null;
+    if (!replay) return;
+    cancelAutoResume();
+    setDayRun(false);
+    setEndCard(null);
+    setLaidToRest(null);
+    const todays = new Set(day.pages.map((p) => p.id));
+    const keep = Object.fromEntries(Object.entries(runtimeRef.current.acks).filter(([id]) => !todays.has(id)));
+    setRuntime({ acks: { ...keep, ...replay.state.acks }, delivered: [...new Set([...runtimeRef.current.delivered, ...replay.state.delivered])] });
+    clock.pause();
+    clock.jumpTo(replay.dayOverAt);
+    lastTickRef.current = replay.dayOverAt;
+    setNow(clock.now());
+    setSpeedState(0);
+    setReadIndex(null);
+  };
+
+  /** Jump to 7 AM the next morning, when the missed pages come back as a 666 rebook page. */
+  const nextMorning = () => {
+    setLaidToRest(haunt?.id ?? null);
+    travelTo(startOfDay(addDays(dayKey, 1), tz) + 7 * HOUR);
+  };
+
+  /** Bring a missed commitment back: a call-to-rebook block at 9 AM the day after it was missed (or soon, if that has passed). */
+  const resurrect = useCallback(
+    (commitmentId: string, missedDayKey: string) => {
+      const missed = commitments.find((c) => c.id === commitmentId);
+      if (!missed) return;
+      const block = resurrection(missed, addDays(missedDayKey, 1), tz, clock.now(), newId('c'));
+      setCommitments((list) => (list.some((c) => c.title === block.title && c.start === block.start) ? list : mergeCommitments(list, [block])));
+      setAnnouncement(`Resurrected. ${block.title} at ${readableClock(block.start, tz)}.`);
+    },
+    [commitments, tz, clock],
+  );
+
+  /** Answer the morning 666: Rebook books the call for each missed commitment; Let it go just lays it to rest. */
+  const answerRebook = (rebook: Rebook, choice: 'rebook' | 'let-go') => {
+    if (choice === 'rebook') for (const id of rebook.commitmentIds) resurrect(id, rebook.missedDayKey);
+    else setAnnouncement('Let it go. Laid to rest.');
+    setRebooksDone((done) => (done.includes(rebook.id) ? done : [...done, rebook.id]));
+  };
+
   /** One-press demo: load the sample day if the pager is empty, then run it from 6 AM. */
   const demoDay = () => {
     if (commitments.length === 0) setCommitments((list) => mergeCommitments(list, sampleWithHistory(dayKey, tz)));
@@ -487,6 +552,7 @@ export function usePager() {
     setRuntime(fresh.runtime);
     setMemory([]);
     setAdvice(emptyPrepAdvice());
+    setRebooksDone([]);
     setReadIndex(null);
     setImportReport(null);
     setEndCard(null);
@@ -543,6 +609,12 @@ export function usePager() {
     endCard,
     closeEndCard: () => setEndCard(null),
     demoDay,
+    ignoreIt,
+    nextMorning,
+    rebookAsk,
+    answerRebook,
+    resurrect,
+    todayHaunt,
     ack,
     read,
     statusOf,
