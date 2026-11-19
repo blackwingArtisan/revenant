@@ -84,12 +84,28 @@ The stored snapshot gains an optional `prepAdvice: { dismissed: routineKey[]; si
 
 **Recurrence.** Expanded on local calendar days and converted with `zonedToEpoch` at the original wall time, so a weekly 9:00 meeting stays at 9:00 across DST. COUNT counts excluded dates, as RFC 5545 requires.
 
+## Threat model: the relay
+The relay is the only piece that can spend money or reach a phone, so it is designed as if its URL and shared secret were public.
+
+**A secret in the browser bundle is not a secret.** `VITE_RELAY_SECRET` is compiled into the PWA, so anyone who can load a relay-mode build can read it. It only keeps out drive-by traffic. Every protection that matters is on the server.
+
+| Threat | What an attacker would do | Control |
+|---|---|---|
+| Open SMS gateway | POST `/page` or `/schedule` with their own `to` and text, using the relay's paid number | The relay texts only `RELAY_PAGER_NUMBER` from its own configuration; `to` is ignored and schedule payloads carry no number |
+| Toll fraud or spam to the owner | Replay requests to flood the configured phone | Daily caps: `RELAY_DAILY_PAGE_CAP` distinct pages (the beep budget) and `RELAY_SENDS_PER_PAGE` texts per page, reset at local midnight; 429 past the cap |
+| Secret guessing by timing | Measure response times to recover the secret byte by byte | `crypto.timingSafeEqual` on SHA-256 digests of both values |
+| Cross-site use | Make a visitor's browser call the relay from another site | No wildcard CORS; an `Origin` other than `RELAY_ALLOWED_ORIGIN` is refused with 403 |
+| Schedule flooding | Create thousands of schedules far in the future | At most 64 beeps per request, each due within 48 hours, numeric codes only |
+| Cost runaway | Any of the above at volume | AWS End User Messaging monthly spend limit and an AWS Budgets alarm as account-level backstops |
+
+**Known limits.** The cap ledger is in memory, so it resets when Lambda starts a new execution environment; a DynamoDB conditional counter can replace it behind `SendLedger`. Requests without an `Origin` header (scripts, not browsers) are checked by the secret only. Multi-user use needs real sign-in (Amazon Cognito) in place of the shared secret.
+
 ## Error handling
 - Storage blocked or full: the pager keeps working in memory.
 - Travel adapter error: the commitment uses the default travel time.
 - Notification permission denied: in-app LCD, chirp and live region still page.
 - Unknown TZID or rule: imported with the fallback zone or first occurrence, with a warning.
-- Relay: 401 without the secret, 503 if unconfigured, 400 on bad input, 404 for an unknown path or an address with no result, 501 when geocoding is not configured, 502 with the AWS error name.
+- Relay: 401 without the secret, 403 for a browser origin that is not allowed, 503 if unconfigured or without a pager number, 400 on bad input, 404 for an unknown path or an address with no result, 429 past the daily page cap, 501 when geocoding is not configured, 502 with the AWS error name.
 - Geocoder error or no result: the typed place keeps no coordinates and uses the default travel time.
 - Suggestions: nothing is ever changed without Apply; dismissed routines stay hidden.
 

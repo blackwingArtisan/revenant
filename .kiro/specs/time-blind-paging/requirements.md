@@ -138,7 +138,7 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 
 8.1 WHERE the relay travel adapter is not selected, THE SYSTEM SHALL estimate travel with the free local straight-line estimate.
 8.2 WHERE `VITE_TRAVEL=relay` and a relay URL is set, THE SYSTEM SHALL get travel times from Amazon Location Service through the relay, with the departure time.
-8.3 WHERE `VITE_CHANNEL=relay` and a relay URL and number are set, WHEN a page beeps, THE SYSTEM SHALL send the page as an SMS through Amazon End User Messaging via the relay.
+8.3 WHERE `VITE_CHANNEL=relay` and a relay URL is set, WHEN a page beeps, THE SYSTEM SHALL send the page as an SMS through Amazon End User Messaging via the relay.
 8.4 WHEN the relay receives a schedule request, THE SYSTEM SHALL create one self-deleting EventBridge Scheduler schedule per beep, replacing any schedule of the same name, so that pages go out with the browser closed.
 8.5 IF the relay has no shared secret configured, THEN THE SYSTEM SHALL refuse every request.
 8.6 WHILE the app runs in the browser, THE SYSTEM SHALL NOT hold or receive AWS credentials.
@@ -148,6 +148,12 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 8.10 WHERE the relay channel is selected, WHEN the user presses ACK, THE SYSTEM SHALL withdraw that page's pending repeats.
 8.11 WHERE the relay channel is selected and the clock is live, WHEN a page moves or leaves the plan, THE SYSTEM SHALL withdraw that page's scheduled beeps.
 8.12 WHERE the relay channel is selected, WHEN a beep is already scheduled at the relay, THE SYSTEM SHALL NOT send it again from the open app.
+8.13 WHEN the relay sends an SMS, THE SYSTEM SHALL send it only to the phone number in the relay's own configuration and SHALL ignore any destination in the request.
+8.14 IF the relay has no valid pager number configured, THEN THE SYSTEM SHALL refuse `/page` and `/schedule` requests and send nothing when a schedule fires.
+8.15 WHEN the relay checks the shared secret, THE SYSTEM SHALL compare it in constant time.
+8.16 IF sending a page would exceed the configured daily cap of distinct pages, or of texts per page, THEN THE SYSTEM SHALL NOT send it and SHALL answer 429.
+8.17 IF a request carries an `Origin` other than the configured PWA origin, THEN THE SYSTEM SHALL refuse it, and THE SYSTEM SHALL NOT send a wildcard CORS header.
+8.18 IF a schedule request holds more than 64 beeps, or a beep that is not due within the next 48 hours, THEN THE SYSTEM SHALL refuse the request.
 
 ## Requirement 9: Learn from late ACKs
 **User story:** As a user who is often not ready when the leave-now page comes, I want the pager to notice and suggest more prep time, so that the page matches how long I really take, without the pager changing my plans behind my back.

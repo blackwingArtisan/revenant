@@ -53,13 +53,13 @@ describe('remote schedule sync', () => {
 
   it('the relay channel posts the beeps to /schedule and does not send them again from the open app', async () => {
     const fetchImpl = vi.fn(async () => new Response('{}', { status: 200 }));
-    const ch = new RelaySmsChannel('https://relay.example.com/', '+15555550123', 'token', fetchImpl as unknown as typeof fetch);
+    const ch = new RelaySmsChannel('https://relay.example.com/', 'token', fetchImpl as unknown as typeof fetch);
     const { create } = diffSchedules({}, pagesFor([dentist]), { 'd:get-ready': 1 }, at(DAY, 8, 0));
     expect(await ch.schedule(create)).toBe(true);
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://relay.example.com/schedule');
-    const body = JSON.parse(init.body as string) as { to: string; alerts: { id: string; at: number }[] };
-    expect(body.to).toBe('+15555550123');
+    const body = JSON.parse(init.body as string) as { to?: string; alerts: { id: string; at: number }[] };
+    expect(body.to).toBeUndefined();
     expect(body.alerts.map((a) => a.id)).toEqual(['d:leave-now#0', 'd:leave-now#1', 'd:leave-now#2', 'd:leave-now#3']);
     expect(body.alerts[0]!.at).toBe(at(DAY, 10, 10));
 

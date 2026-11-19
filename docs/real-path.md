@@ -21,11 +21,20 @@ Nothing in this repository deploys the relay. All its logic is in `src/relay/han
 |---|---|---|
 | `POST /route-eta` | `{ origin: [lon, lat], destination: [lon, lat], mode, departAt? }` | Fastest route; returns `{ minutes }` (rounded up) |
 | `POST /geocode` | `{ address }` (1 to 200 characters) | First Places result as `{ lat, lon, label }` |
-| `POST /page` | `{ to, code, text }` | One SMS, at most 160 characters: `911 LEAVE NOW: ...` |
-| `POST /schedule` | `{ to, alerts: [{ id, at (epoch ms), code, text }] }` | One one-time schedule per alert, deleted after it runs; an existing schedule with the same name is replaced |
+| `POST /page` | `{ pageId, code, text }` | One SMS to the configured `RELAY_PAGER_NUMBER`, at most 160 characters: `911 LEAVE NOW: ...` |
+| `POST /schedule` | `{ alerts: [{ id, at (epoch ms), code, text }] }` (at most 64, each due within 48 hours) | One one-time schedule per alert, deleted after it runs; an existing schedule with the same name is replaced |
 | `POST /ack` | `{ pageId }` | Deletes the page's pending repeat schedules |
 
-Errors: `401` missing or wrong secret, `503` relay not configured, `400` bad input, `404` unknown path (or, for `/geocode`, an address with no result), `501` geocoding not configured, `502` with the AWS error name.
+Errors: `401` missing or wrong secret, `403` a browser origin other than `RELAY_ALLOWED_ORIGIN`, `503` relay or pager number not configured, `400` bad input, `404` unknown path (or, for `/geocode`, an address with no result), `429` daily page cap reached, `501` geocoding not configured, `502` with the AWS error name.
+
+## Limits that keep the relay from being an open SMS gateway
+- **No client-chosen destination.** The relay texts only `RELAY_PAGER_NUMBER`. A `to` field in a request is ignored, and schedule payloads carry no phone number.
+- **Daily caps.** At most `RELAY_DAILY_PAGE_CAP` distinct pages a day (default 6, the beep budget) and `RELAY_SENDS_PER_PAGE` texts per page (default 4: the first beep and three repeats), reset at midnight in `RELAY_TIME_ZONE`. Over the cap, `/page` answers 429 and a firing schedule sends nothing.
+- **Constant-time secret check.** `x-relay-secret` is compared with `crypto.timingSafeEqual` on SHA-256 digests.
+- **Origin check, no wildcard CORS.** Requests carrying an `Origin` other than `RELAY_ALLOWED_ORIGIN` get 403, and the Function URL sends no `access-control-allow-origin` unless that variable is set.
+- **Bounded scheduling.** `/schedule` accepts at most 64 beeps per request, each due within the next 48 hours, with numeric codes only.
+
+The in-memory cap lives as long as a warm Lambda environment, so it bounds bursts; a durable ledger can replace it behind the `SendLedger` interface. Set an AWS End User Messaging monthly spend limit as the account-level backstop. The full threat model is in `.kiro/specs/time-blind-paging/design.md`.
 
 ## Geocoding (not enabled yet)
 In relay mode the app geocodes an address typed on the add form once, when it matches no saved place, and stores the coordinates on the new place so travel uses them. The relay's `/geocode` route calls the GeoPlaces v2 `Geocode` operation through a narrow `PlacesClient` interface typed in `src/relay/handler.ts`.
@@ -39,10 +48,10 @@ The SDK package `@aws-sdk/client-geo-places` is **not installed** in this reposi
 1. **Phone number.** In AWS End User Messaging SMS, register an origination identity (a toll-free number needs registration before it can send). Put its ARN or number in `RELAY_ORIGINATION_IDENTITY`.
 2. **Scheduler.** Create a schedule group (default `revenant-pager`) and an IAM role that EventBridge Scheduler can assume to invoke the relay Lambda. Set `RELAY_SCHEDULER_TARGET_ARN` (the Lambda ARN) and `RELAY_SCHEDULER_ROLE_ARN`.
 3. **Lambda.** Bundle `src/relay/lambda.ts` (for example with esbuild) and deploy it with a Function URL (auth type NONE; the relay checks its own shared secret). Its role needs `geo-routes:CalculateRoutes`, `geo-places:Geocode` (once geocoding is enabled), `sms-voice:SendTextMessage`, `scheduler:CreateSchedule`, `scheduler:ListSchedules`, `scheduler:DeleteSchedule` and `iam:PassRole` on the scheduler role.
-4. **Secret.** Set `RELAY_SHARED_SECRET` to a long random value and `RELAY_ALLOWED_ORIGIN` to the PWA's origin.
-5. **App.** Build the PWA with `VITE_TRAVEL=relay`, `VITE_CHANNEL=relay`, `VITE_RELAY_URL`, `VITE_RELAY_SECRET` and `VITE_PAGER_NUMBER`.
+4. **Secret and limits.** Set `RELAY_SHARED_SECRET` to a long random value, `RELAY_ALLOWED_ORIGIN` to the PWA's origin, `RELAY_PAGER_NUMBER` to the phone that receives pages, and optionally `RELAY_DAILY_PAGE_CAP`, `RELAY_SENDS_PER_PAGE` and `RELAY_TIME_ZONE`.
+5. **App.** Build the PWA with `VITE_TRAVEL=relay`, `VITE_CHANNEL=relay`, `VITE_RELAY_URL` and `VITE_RELAY_SECRET`. The browser never holds the phone number.
 
-The shared secret is suitable for a single-user deployment. A multi-user version would replace it with Amazon Cognito sign-in.
+The shared secret is suitable for a single-user deployment, and it is visible to anyone who can load a relay-mode build, so keep such a build private. A multi-user version would replace it with Amazon Cognito sign-in.
 
 ## Cost shape
 Each beeping page is one SMS (US pricing is a fraction of a cent plus carrier fees) and one short-lived schedule. Routing is one CalculateRoutes request per new route per hour (the app caches by route, mode and departure hour). With a budget of six pages a day, a user costs well under a dollar a month.

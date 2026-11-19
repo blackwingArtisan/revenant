@@ -6,7 +6,14 @@
 import { GeoRoutesClient } from '@aws-sdk/client-geo-routes';
 import { PinpointSMSVoiceV2Client } from '@aws-sdk/client-pinpoint-sms-voice-v2';
 import { SchedulerClient } from '@aws-sdk/client-scheduler';
-import { createRelay, type RelayConfig, type ScheduledPageEvent } from './handler';
+import {
+  corsHeaders,
+  createRelay,
+  DEFAULT_DAILY_PAGE_CAP,
+  DEFAULT_SENDS_PER_PAGE,
+  type RelayConfig,
+  type ScheduledPageEvent,
+} from './handler';
 
 interface FunctionUrlEvent {
   rawPath: string;
@@ -24,12 +31,22 @@ interface FunctionUrlResult {
 
 const region = process.env.RELAY_REGION ?? 'us-east-1';
 
+const positive = (v: string | undefined, fallback: number) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+};
+
 const config: RelayConfig = {
   originationIdentity: process.env.RELAY_ORIGINATION_IDENTITY ?? '',
   schedulerTargetArn: process.env.RELAY_SCHEDULER_TARGET_ARN ?? '',
   schedulerRoleArn: process.env.RELAY_SCHEDULER_ROLE_ARN ?? '',
   scheduleGroup: process.env.RELAY_SCHEDULE_GROUP ?? 'revenant-pager',
   sharedSecret: process.env.RELAY_SHARED_SECRET ?? '',
+  pagerNumber: process.env.RELAY_PAGER_NUMBER ?? '',
+  dailyPageCap: positive(process.env.RELAY_DAILY_PAGE_CAP, DEFAULT_DAILY_PAGE_CAP),
+  sendsPerPage: positive(process.env.RELAY_SENDS_PER_PAGE, DEFAULT_SENDS_PER_PAGE),
+  timeZone: process.env.RELAY_TIME_ZONE ?? 'UTC',
+  allowedOrigin: process.env.RELAY_ALLOWED_ORIGIN ?? '',
 };
 
 // `places` is left unset on purpose: @aws-sdk/client-geo-places is not a dependency yet, so
@@ -43,17 +60,14 @@ const relay = createRelay({
   config,
 });
 
-const CORS = {
-  'access-control-allow-origin': process.env.RELAY_ALLOWED_ORIGIN ?? '*',
-  'access-control-allow-headers': 'content-type,x-relay-secret',
-  'content-type': 'application/json',
-};
+// No wildcard: without RELAY_ALLOWED_ORIGIN, browsers on every origin are refused.
+const CORS = corsHeaders(config.allowedOrigin);
 
 function isScheduled(event: unknown): event is ScheduledPageEvent {
   return typeof event === 'object' && event !== null && (event as { kind?: unknown }).kind === 'scheduled-page';
 }
 
-export async function handler(event: FunctionUrlEvent | ScheduledPageEvent): Promise<FunctionUrlResult | { messageId: string | null }> {
+export async function handler(event: FunctionUrlEvent | ScheduledPageEvent): Promise<FunctionUrlResult | { messageId: string | null; capped?: true }> {
   if (isScheduled(event)) return relay.scheduled(event);
   if (event.requestContext.http.method === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   const body = event.body && event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : (event.body ?? null);

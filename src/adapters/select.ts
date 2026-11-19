@@ -7,8 +7,12 @@ export interface AdapterEnv {
   VITE_TRAVEL?: string;
   VITE_CHANNEL?: string;
   VITE_RELAY_URL?: string;
-  VITE_PAGER_NUMBER?: string;
-  /** Single-user token the relay checks; set per deployment, never committed. */
+  /**
+   * Single-user token the relay checks; set per deployment, never committed.
+   * It ships in the browser bundle, so it is not a secret from anyone who can
+   * load the app: the relay's server-side target, caps and origin check are
+   * what limit misuse.
+   */
   VITE_RELAY_SECRET?: string;
 }
 
@@ -34,8 +38,8 @@ export function selectAdapters(env: AdapterEnv, savedPlaces: () => readonly Plac
   const geocoder: Geocoder =
     env.VITE_TRAVEL === 'relay' && relay ? new RelayGeocoder(relay, secret) : new SavedPlacesGeocoder(savedPlaces);
   const channel: PagerChannel =
-    env.VITE_CHANNEL === 'relay' && relay && env.VITE_PAGER_NUMBER
-      ? new RelaySmsChannel(relay, env.VITE_PAGER_NUMBER, secret)
+    env.VITE_CHANNEL === 'relay' && relay
+      ? new RelaySmsChannel(relay, secret)
       : new BrowserNotificationChannel();
   return { travel, geocoder, channel, summary: [`Travel: ${travel.name}`, `Addresses: ${geocoder.name}`, `Out-of-app pages: ${channel.name}`] };
 }

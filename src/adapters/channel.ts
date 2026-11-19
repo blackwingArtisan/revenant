@@ -104,15 +104,15 @@ export class BrowserNotificationChannel implements PagerChannel {
 
 /**
  * Real: hands the page to the relay, which texts it through Amazon End User
- * Messaging SMS and cancels scheduled repeats on ACK. Written and
- * type-checked; used only when VITE_CHANNEL=relay.
+ * Messaging SMS and cancels scheduled repeats on ACK. The browser never names
+ * a phone number: the relay texts only the number in its own configuration.
+ * Written and type-checked; used only when VITE_CHANNEL=relay.
  */
 export class RelaySmsChannel implements PagerChannel {
   readonly name = 'sms (relay)';
 
   constructor(
     private readonly baseUrl: string,
-    private readonly to: string,
     private readonly secret: string,
     private readonly fetchImpl: typeof fetch = (...args) => fetch(...args),
   ) {}
@@ -131,7 +131,7 @@ export class RelaySmsChannel implements PagerChannel {
   async deliver(alert: Alert): Promise<DeliveryReceipt> {
     if (alert.silent) return { channel: this.name, delivered: false, detail: 'silent page' };
     if (this.scheduled.has(alert.id)) return { channel: this.name, delivered: true, detail: 'sent by the relay schedule' };
-    const res = await this.post('/page', { to: this.to, pageId: alert.pageId, code: alert.code, text: alert.text });
+    const res = await this.post('/page', { pageId: alert.pageId, code: alert.code, text: alert.text });
     return { channel: this.name, delivered: res.ok, detail: res.ok ? undefined : `relay ${res.status}` };
   }
 
@@ -144,7 +144,6 @@ export class RelaySmsChannel implements PagerChannel {
     const loud = alerts.filter((a) => !a.silent);
     if (loud.length === 0) return true;
     const res = await this.post('/schedule', {
-      to: this.to,
       alerts: loud.map(({ id, at, code, text }) => ({ id, at, code, text })),
     });
     if (res.ok) for (const a of loud) this.scheduled.add(a.id);

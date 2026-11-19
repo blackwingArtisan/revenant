@@ -124,14 +124,14 @@ describe('channels', () => {
     expect(h.shown).toHaveLength(0);
   });
 
-  it('posts pages and ACKs to the relay', async () => {
+  it('posts pages and ACKs to the relay, never naming a phone number', async () => {
     const fetchImpl = vi.fn(async () => new Response('{}', { status: 200 }));
-    const ch = new RelaySmsChannel('https://relay.example.com', '+15555550123', 'token', fetchImpl as unknown as typeof fetch);
+    const ch = new RelaySmsChannel('https://relay.example.com', 'token', fetchImpl as unknown as typeof fetch);
     expect((await ch.deliver(alert)).delivered).toBe(true);
     await ch.withdraw('d:leave-now');
     const bodies = fetchImpl.mock.calls.map((c) => JSON.parse((c as unknown as [string, RequestInit])[1].body as string));
     expect(bodies).toEqual([
-      { to: '+15555550123', pageId: 'd:leave-now', code: '911', text: 'LEAVE NOW: DENTIST' },
+      { pageId: 'd:leave-now', code: '911', text: 'LEAVE NOW: DENTIST' },
       { pageId: 'd:leave-now' },
     ]);
   });
@@ -154,7 +154,7 @@ describe('adapter selection', () => {
 
   it('chooses the relay only when configured', () => {
     expect(selectAdapters({ VITE_TRAVEL: 'relay' }).travel).toBeInstanceOf(StraightLineTravel);
-    const a = selectAdapters({ VITE_TRAVEL: 'relay', VITE_CHANNEL: 'relay', VITE_RELAY_URL: 'https://relay.example.com', VITE_PAGER_NUMBER: '+15555550123' });
+    const a = selectAdapters({ VITE_TRAVEL: 'relay', VITE_CHANNEL: 'relay', VITE_RELAY_URL: 'https://relay.example.com' });
     expect(a.travel).toBeInstanceOf(RelayTravel);
     expect(a.channel).toBeInstanceOf(RelaySmsChannel);
   });

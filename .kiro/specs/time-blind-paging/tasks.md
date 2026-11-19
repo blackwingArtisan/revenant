@@ -60,3 +60,4 @@
 - [ ] 31. Import and settings end-to-end tests: importing an .ics sends no network request, a file with an unreadable zone shows the warning, and the save-place form works (Req 5.1, 5.7, 5.18)
 - [ ] 32. End-to-end test for Dismiss, and for a dismissed or applied suggestion staying hidden after a reload (Req 9.9, 9.10, 9.15)
 - [ ] 33. End-to-end test for the time machine's +5 min, +15 min, Pause, 1x and 60x controls and the `?speed=` switch (Req 7.1, 7.7, 7.9, 7.10)
+- [x] 34. Relay hardening before any deploy: server-configured pager number (ignore client `to`), constant-time secret check, daily page and per-page text caps, origin check without wildcard CORS, bounded `/schedule`, threat model in `design.md`, and unit tests (Req 8.13-8.18)
