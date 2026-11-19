@@ -8,7 +8,7 @@
       "matcher": "^(?:.*/)?src/engine/codes\\.ts$",
       "action": {
         "type": "agent",
-        "prompt": "src/engine/codes.ts changed. Check that every code in CODE_FOR, plus the boot and missed codes, has an entry in CODE_CARD with a plain-language meaning, that src/app/components/CodeCard.tsx still renders them all, and that the code table in README.md matches. Fix any mismatch and run `npm test`."
+        "prompt": "src/engine/codes.ts changed. Check that every code in CODE_FOR, plus the boot and missed codes, has an entry in CODE_CARD with a plain-language meaning, that src/app/components/CodeCard.tsx still renders them all, and that the code table in docs/features.md and the code line in README.md match. Fix any mismatch and run `npm test`."
       },
       "timeout": 300,
       "enabled": true

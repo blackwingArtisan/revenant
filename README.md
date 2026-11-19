@@ -103,51 +103,12 @@ flowchart LR
 
 The engine is pure: each tick the app asks it "given these pages, these ACKs and this instant, what should have beeped?" and delivers only what it has not delivered before. Because the clock is injected, the same code drives the real clock, the 900x demo and every test. Everything defaults to the free local adapters.
 
-| Port | Local (default, free) | Real (AWS) | Switch |
-|---|---|---|---|
-| Clock | `SimClock` with pause, jump and speed | the same clock at 1x | `?at=`, `?speed=` |
-| Travel time | straight-line distance x 1.3 at a per-mode speed | Amazon Location Service `CalculateRoutes` via the relay | `VITE_TRAVEL=local\|relay` |
-| Address lookup | saved places only, never invents coordinates | Amazon Location Service Places `Geocode` via the relay | `VITE_TRAVEL=local\|relay` |
-| Out-of-app pages | Web Notifications + service worker, with an ACK action | SMS via AWS End User Messaging, with each future beep handed to a self-deleting EventBridge Scheduler schedule | `VITE_CHANNEL=browser\|relay` |
-| Storage | `localStorage`, guarded | same port | none |
+**AWS status:** the relay is built, hardened (server-side destination, daily caps, constant-time secret, origin check) and unit-tested against stub AWS clients. It is not deployed yet; see [`docs/real-path.md`](docs/real-path.md).
 
-**Real (AWS) status:** the relay is built and unit-tested against stub AWS clients, and hardened before deploy (server-side destination, daily caps, constant-time secret, origin check; threat model in the spec's `design.md`). It has not been deployed yet, and `/geocode` waits on one SDK package. Details in [`docs/real-path.md`](docs/real-path.md).
-
-<details>
-<summary><strong>Everything that works today</strong></summary>
-
-- **Pages at the moment to act.** Leave-now = start - travel - buffer. Get-ready = leave-now - prep x an honesty factor (default x1.5, because "10 minutes" is never 10 minutes).
-- **Travel from where you will be.** Straight-line distance at a per-mode speed, chained from the previous appointment if it ends within three hours, else from home. Video calls say `JOIN` with no travel.
-- **Typed addresses get real travel times.** An address typed on the add form that matches no saved place becomes a place and is looked up once. By default only saved places are known, so an unknown address keeps the default travel time and coordinates are never invented; with the relay, Amazon Location Service Places finds them.
-- **Escalation until ACK.** Unanswered pages repeat at +3, +6 and +10 minutes (`911 911`, `911 911 911`) and stop at the cutoff. ACK cancels every later repeat. Missed pages come back from message memory as `666`.
-- **Pages you ignore come back to haunt you.** Once the day is over, anything you missed returns as one silent `666` recap ("HAUNTING: 2 SLIPPED TODAY ..."): the LCD glitches, the moon bleeds red and the fog thickens. It never beeps and never touches the budget. On the day sheet, missed pages get a tombstone stamp, `RIP 9:25`, and a **Resurrect** button. At 7 AM the next morning the pager asks `666 YESTERDAY: DENTIST CLEANING. REBOOK?` and will not be ACK'd away: **Rebook** books a 15-minute call paged as `121`, **Let it go** lays it to rest. After the demo's receipt, "See what happens if you ignore it" replays the day with the dentist ignored to show the whole path.
-- **A strict silence budget.** At most N beeping pages per local day (default 6), ranked must > normal, leave-now > focus > get-ready. Cut and low-priority items go into one silent `100` digest.
-- **Learns from late ACKs.** If the leave-now page for a routine (the same title at the same place) was ACK'd late, or missed, in 2 of the last 3 times, the day sheet suggests more prep: "You often ACK this one late. Try 40 min prep instead of 30." Nothing changes until you press Apply, and Dismiss hides it. It moves the existing get-ready page and never adds a beep.
-- **Body double.** Focus blocks page `121` to start, check in on a cadence ("STILL ON QUARTERLY TAXES? 95 MIN LEFT") and `200` to wrap up.
-- **Calendar import.** Drop an .ics file: UTC, TZID and floating times, all-day events, DAILY/WEEKLY/MONTHLY rules with INTERVAL, COUNT, UNTIL, EXDATE and RECURRENCE-ID, cancelled events, Windows time-zone names, GEO. Locations match saved places; video links become online. Re-import updates in place and keeps your tuned prep times.
-- **Time zones done properly.** All math is in elapsed minutes; days, labels and the digest follow your IANA zone, including 23- and 25-hour DST days.
-- **Time you can see.** A 6 AM-to-midnight day bar under the clock with a tick per page and a moving playhead, a red "now" line across the day sheet, and the screen's edges glowing ember while a `911` beeps.
-- **Time machine.** Pause, +5/+15/+60 min, jump to the next page, 1x/60x/900x, and "Run the day from 6 AM", which stops on the exact minute a page fires. Travelling back replays the day exactly.
-- **One-press demo.** "Watch a day (60 s)" loads the sample day if the pager is empty and runs it from 6 AM at 900x. It stops on each page. On a budgeted beep, ACK keeps the day running; a page outside the budget (the digest, a check-in, a wrap-up) holds for 1.5 seconds and carries on by itself, so the viewer presses ACK six times, once per beep on the receipt. An end-to-end test holds the run to at most 7 presses and 75 seconds. Two earlier weeks of the same dinner, labelled "sample history" in the app, give the learner something to learn from, and the run ends on an end-of-day receipt.
-- **It powers on like a 1990s pager.** A plain visit opens on a two-second boot: dark glass, two backlight flickers, `88888`, then `07734` (hELLO upside down). Reduced motion and the test and demo switches skip it; `?boot` asks for it.
-- **It buzzes.** On phones that support vibration, each page vibrates in the rhythm of its chirp, longer as it repeats.
-- **A readable LCD.** A message that fits sits still. A longer one shows its start, holds, scrolls to its end and repeats.
-- **Lock-screen pages.** With notifications allowed, the service worker shows each page with an ACK action that acknowledges it in the app.
-- **Accessible.** Every page is announced through an assertive live region; all controls work from the keyboard (A = ACK, R = READ, M = mute, N = next page); visible focus; zero axe-core WCAG 2.1 A/AA violations in the end-to-end suite; `prefers-reduced-motion` gives a still pager. On a phone, a docked mini pager with a large ACK button appears when the device is scrolled away.
-- **Offline and private.** The service worker caches the app shell for offline use. Everything stays in this browser's storage.
-</details>
+Every feature, and how each part switches between the free local adapter and the AWS one: [`docs/features.md`](docs/features.md).
 
 ## Codes
-| Code | Meaning |
-|---|---|
-| `411` | Get ready. Shoes, keys, meds. |
-| `911` | Leave now to arrive on time. |
-| `911 911` | Still here? Unanswered pages repeat until ACK. |
-| `121` | Body double: start, or check in on, a focus block. |
-| `200` | Wrap up: the focus block is over. |
-| `100` | Digest: one quiet page with everything that did not earn a beep. |
-| `666` | Missed: a page nobody answered, the end-of-day haunting that lists them, and the next morning's "REBOOK?". |
-| `07734` | hELLO (turn it upside down). |
+`411` get ready · `911` leave now · `911 911` still here? · `121` body double · `200` wrap up · `100` digest · `666` missed, and it comes back · `07734` hELLO. The full wallet card is in the app and in [`docs/features.md`](docs/features.md#codes).
 
 ## Run it
 Requires Node 22 or later.
@@ -157,11 +118,7 @@ npm ci
 npm run dev        # http://localhost:3150
 ```
 
-Demo switches: `?boot` plays the power-on sequence, `/?sample` loads an invented sample day, `?at=2026-11-19T06:00` starts the clock paused at that wall time, `?tz=America/Chicago` sets the zone, `?speed=900` runs fast, `?fresh` clears saved state.
-
-Production build: `npm run build` writes a static site to `dist/`; `npm run preview` serves it on port 3151. The PWA is a static site and can be served from Cloudflare Pages or any static host.
-
-Media: with the preview running, `node scripts/capture-media.mjs http://localhost:3151` recaptures `docs/media/` and the social card `public/og.png` (the GIF needs ffmpeg).
+Demo URL switches, the production build and media capture: [`docs/features.md`](docs/features.md#run-and-demo-switches).
 
 ## Test it
 ```sh
@@ -172,13 +129,7 @@ npm run test:e2e   # Playwright against the production build (desktop + phone)
 
 219 unit tests (Vitest, including fast-check properties) and 31 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone. [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the same suites on every push.
 
-<details>
-<summary><strong>What the tests cover</strong></summary>
-
-- **Properties (fast-check):** over generated days, the silence budget is never exceeded, ACK stops every repeat, the plan is deterministic in any input order, no appointment pages at its start, and the learner never adds a page. They found two bugs, now fixed with regression tests (see the spec's `design.md`).
-- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history, end-of-day report, the silence line and 666 haunting, the ignore-it replay, the next morning's rebook page and the resurrected call, the before/after comparison with a time-to-leave alert, engine purity (no clock, randomness, storage, network or outside imports in `src/engine`), the Kiro write guard that blocks such writes and every hook file, the steering files (inclusion modes, the relay fileMatch pattern, AWS SDK imports only under `src/relay`, every AWS call the relay makes listed in its steering), spec traceability (every EARS criterion claimed by a task), the power-on timeline, the vibration rhythm, the DST-correct day bar, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
-- **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`, its RIP stamp and the end-of-day haunting that ACK lays to rest; after the receipt, "See what happens if you ignore it" through the red-moon haunting to the next morning's `666 ... REBOOK?`, which ACK alone will not dismiss, and Rebook turning it into a `121` call at 9 AM, with an axe scan; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the power-on sequence frame by frame, and skipped under reduced motion; vibration in the chirp's rhythm; field-level form errors; the demo button above the fold at 390 px; the whole pager inside the screen at 360, 390 and 412 px on the idle, running and 666 screens; the day bar's playhead, the now-line and the ember edge on a loud `911`; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt in at most 7 ACK presses and 75 seconds; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; the app shell opening offline; and the 1200 x 630 social card behind the link preview.
-</details>
+What each suite covers, test by test: [`docs/testing.md`](docs/testing.md).
 
 ## Credits
 Fonts are self-hosted through Fontsource: VT323, Big Shoulders Display, IBM Plex Mono and Monoton under the SIL Open Font License 1.1, and Special Elite under the Apache License 2.0. Runtime: React (MIT). AWS SDK for JavaScript v3 (Apache 2.0) is an optional dependency used only by the relay.
