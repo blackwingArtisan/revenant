@@ -106,6 +106,8 @@ The engine is pure: each tick the app asks it "given these pages, these ACKs and
 - **Time zones done properly.** All math is in elapsed minutes; days, labels and the digest follow your IANA zone, including 23- and 25-hour DST days.
 - **Time machine.** Pause, +5/+15/+60 min, jump to the next page, 1x/60x/900x, and "Run the day from 6 AM", which stops on the exact minute a page fires. Travelling back replays the day exactly.
 - **One-press demo.** "Watch a day in about a minute" loads the sample day if the pager is empty and runs it from 6 AM at 900x. It stops on each page; ACK keeps the day running. Two earlier weeks of the same dinner, labelled "sample history" in the app, give the learner something to learn from, and the run ends on an end-of-day receipt.
+- **It powers on like a 1990s pager.** A plain visit opens on a two-second boot: dark glass, two backlight flickers, `88888`, then `07734` (hELLO upside down). Reduced motion and the test and demo switches skip it; `?boot` asks for it.
+- **It buzzes.** On phones that support vibration, each page vibrates in the rhythm of its chirp, longer as it repeats.
 - **A readable LCD.** A message that fits sits still. A longer one shows its start, holds, scrolls to its end and repeats.
 - **Lock-screen pages.** With notifications allowed, the service worker shows each page with an ACK action that acknowledges it in the app.
 - **Accessible.** Every page is announced through an assertive live region; all controls work from the keyboard (A = ACK, R = READ, M = mute, N = next page); visible focus; zero axe-core WCAG 2.1 A/AA violations in the end-to-end suite; `prefers-reduced-motion` gives a still pager. On a phone, a docked mini pager with a large ACK button appears when the device is scrolled away.
@@ -132,7 +134,7 @@ npm ci
 npm run dev        # http://localhost:3150
 ```
 
-Demo switches: `/?sample` loads an invented sample day, `?at=2026-11-19T06:00` starts the clock paused at that wall time, `?tz=America/Chicago` sets the zone, `?speed=900` runs fast, `?fresh` clears saved state.
+Demo switches: `?boot` plays the power-on sequence, `/?sample` loads an invented sample day, `?at=2026-11-19T06:00` starts the clock paused at that wall time, `?tz=America/Chicago` sets the zone, `?speed=900` runs fast, `?fresh` clears saved state.
 
 Production build: `npm run build` writes a static site to `dist/`; `npm run preview` serves it on port 3151. The PWA is a static site and can be served from Cloudflare Pages or any static host.
 
@@ -143,13 +145,13 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-147 unit tests (Vitest) and 20 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
+152 unit tests (Vitest) and 25 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone.
 
 <details>
 <summary><strong>What the tests cover</strong></summary>
 
-- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history and end-of-day report, the before/after comparison, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
-- **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
+- **Unit:** wallet code card, time zones and DST, lead times, honesty factor, origin chaining, escalation, ACK, coalescing after a jump, stopping a fast run on the first beep, stale pages, budget ranking and pinning, digest timing, body double, determinism, the prep-time learner, the sample history and end-of-day report, the before/after comparison, the power-on timeline and the vibration rhythm, the local and relay geocoders, typed addresses, .ics parsing and recurrence, import and merge, adapters, the remote schedule diff, and the relay (routes, geocoding, SMS, schedules, and its hardening: server-side destination, daily caps, constant-time secret, origin check) against stub AWS clients.
+- **End to end:** adds a dentist appointment, time-travels, sees `411` then `911` with the right text and beep count, ignores it and sees `911 911`, ACKs by button and keyboard; a missed page read back as `666`; budget and digest; body double; .ics import and re-import; a 900x run that pauses on the page; persistence across reload; keyboard tabs; phone layout with the docked ACK; an axe-core WCAG 2.1 AA scan of every console tab while paging; reduced motion; the power-on sequence frame by frame, and skipped under reduced motion; vibration in the chirp's rhythm; field-level form errors; the demo button above the fold at 390 px; the one-press demo day with the before/after strip, the learner's card from labelled sample history, and a whole day played through to its receipt; two late ACKs producing a prep suggestion that Apply turns into an earlier get-ready page; typed addresses with and without a saved match; the LCD line starting at its left edge and scrolling only when it overflows; the service worker showing a page as a notification with an ACK action and relaying that ACK to the app; and the app shell opening offline.
 </details>
 
 ## Built with Kiro

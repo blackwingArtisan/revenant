@@ -22,11 +22,32 @@ export function unlockAudio(): void {
   if (c && c.state === 'suspended') void c.resume().catch(() => undefined);
 }
 
+/** Bursts per chirp: 3 on the first beep, 2 more per escalation level, at most 9. */
+export function chirpBursts(level: number): number {
+  return 3 + Math.min(Math.max(0, level), 3) * 2;
+}
+
+/** The chirp's rhythm as a vibration pattern: 110 ms on, 80 ms off, per burst. */
+export function vibrationPattern(level: number): number[] {
+  const pattern: number[] = [];
+  for (let i = 0; i < chirpBursts(level); i++) pattern.push(...(i === 0 ? [110] : [80, 110]));
+  return pattern;
+}
+
+/** Buzz in the chirp's rhythm where the device can vibrate (most Android phones; not iOS Safari). */
+export function vibrate(level: number): void {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(vibrationPattern(level));
+  } catch {
+    // vibration is a nicety too
+  }
+}
+
 export function beep(level: number, volume = 0.18): void {
   const c = context();
   if (!c) return;
   try {
-    const bursts = 3 + Math.min(level, 3) * 2;
+    const bursts = chirpBursts(level);
     const start = c.currentTime + 0.02;
     const gain = c.createGain();
     gain.gain.value = 0;

@@ -281,6 +281,12 @@ kbd {
   color: var(--muted);
   font-size: 12.5px;
 }
+/* Keyboard hints mean nothing on a touch screen. */
+@media (hover: none) {
+  .keys {
+    display: none;
+  }
+}
 @media (max-width: 920px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
@@ -467,6 +473,49 @@ kbd {
     inset 0 0 22px rgba(0, 0, 0, 0.2),
     0 0 26px rgba(198, 243, 109, 0.55);
 }
+/* ---------- Power-on: dark glass, two backlight flickers, 88888, then 07734 ---------- */
+.pager--booting[data-boot='dark'] .lcd-glass {
+  background: #1a2016;
+  color: transparent;
+}
+.pager--booting[data-boot='dark'] .lcd-status,
+.pager--booting[data-boot='flicker'] .lcd-status {
+  visibility: hidden;
+}
+.pager--booting[data-boot='flicker'] .lcd-glass {
+  animation: backlight-flicker 0.45s steps(1) 1;
+}
+@keyframes backlight-flicker {
+  0%,
+  50% {
+    background: var(--lcd-on);
+  }
+  25%,
+  75% {
+    background: #1a2016;
+  }
+}
+.pager--booting[data-boot='segments'] .lcd-glass,
+.pager--booting[data-boot='hello'] .lcd-glass {
+  background: var(--lcd-on);
+  box-shadow:
+    inset 0 0 22px rgba(0, 0, 0, 0.2),
+    0 0 26px rgba(198, 243, 109, 0.55);
+}
+.pager--booting[data-boot='segments'] .lcd-code {
+  opacity: 0.55;
+}
+.cta--wake {
+  animation: cta-wake 0.9s ease-out 1;
+}
+@keyframes cta-wake {
+  0% {
+    box-shadow: 0 0 0 0 rgba(157, 255, 110, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 18px rgba(157, 255, 110, 0);
+  }
+}
 .lcd-status {
   display: flex;
   justify-content: space-between;
@@ -547,10 +596,6 @@ kbd {
   100% {
     transform: translateX(var(--ticker-shift, 0));
   }
-}
-.pager--idle .lcd-ticker,
-.pager--reading .lcd-ticker {
-  white-space: normal;
 }
 
 .pager-buttons {
@@ -1250,6 +1295,17 @@ kbd {
 }
 .field input[aria-invalid='true'] {
   border-color: var(--ember);
+  outline: 2px solid var(--ember);
+  outline-offset: 1px;
+}
+.field-row--top {
+  align-items: flex-start;
+}
+.field-note {
+  flex: 1 1 100%;
+  margin-top: -4px;
+  color: var(--muted);
+  font-size: 12px;
 }
 input[type='date']::-webkit-calendar-picker-indicator,
 input[type='time']::-webkit-calendar-picker-indicator {

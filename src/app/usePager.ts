@@ -16,7 +16,7 @@ import { dayReport as computeDayReport, dayReportLine, type DayReport } from '..
 import { defaultSettings, sampleWithHistory, SAMPLE_PLACES } from '../engine/sample';
 import { addDays, DAY, HOUR, isValidTimeZone, localDayKey, parseDayKey, startOfDay, zonedToEpoch } from '../engine/time';
 import type { Commitment, PageStatus, Place, PlannedPage, Settings } from '../engine/types';
-import { beep, unlockAudio } from './beep';
+import { beep, unlockAudio, vibrate } from './beep';
 
 const MEMORY_SIZE = 30;
 const store = new LocalStorageStore();
@@ -214,7 +214,9 @@ export function usePager() {
     const loud = r.fresh.filter((a) => !a.silent);
     if (loud.length > 0) {
       setBeeps((b) => b + 1);
-      if (soundRef.current) beep(Math.max(...loud.map((a) => a.level)));
+      const level = Math.max(...loud.map((a) => a.level));
+      if (soundRef.current) beep(level);
+      vibrate(level);
     }
     const top = r.fresh[r.fresh.length - 1]!;
     setAnnouncement(`Page ${top.code}. ${top.text}`);

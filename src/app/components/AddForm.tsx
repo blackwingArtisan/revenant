@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { effectivePrepMinutes } from '../../engine/plan';
 import { MINUTE, pad, parseHm, readableClock, zonedToEpoch } from '../../engine/time';
 import type { CommitmentKind, Priority } from '../../engine/types';
@@ -18,6 +18,15 @@ export function AddForm({ pager }: { pager: PagerApi }) {
   const [checkIn, setCheckIn] = useState(25);
   const [priority, setPriority] = useState<Priority>('normal');
   const [error, setError] = useState('');
+  // Which field the error is about: it gets aria-invalid, a red outline and focus.
+  const [badField, setBadField] = useState<'title' | 'time' | 'duration' | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
+  const durationRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const ref = badField === 'title' ? titleRef : badField === 'time' ? timeRef : badField === 'duration' ? durationRef : null;
+    ref?.current?.focus();
+  }, [badField, error]);
   const [addedId, setAddedId] = useState<string | null>(null);
 
   const added = addedId ? plan.pages.filter((p) => p.commitmentId === addedId) : [];
@@ -27,10 +36,15 @@ export function AddForm({ pager }: { pager: PagerApi }) {
     e.preventDefault();
     const hm = parseHm(time);
     const [y, m, d] = date.split('-').map(Number);
-    if (!title.trim()) return setError('Give it a name.');
-    if (!hm || !y || !m || !d) return setError('Pick a date and a start time.');
-    if (duration < 5) return setError('It needs to last at least 5 minutes.');
+    const fail = (field: 'title' | 'time' | 'duration', message: string) => {
+      setBadField(field);
+      setError(message);
+    };
+    if (!title.trim()) return fail('title', 'Give it a name.');
+    if (!hm || !y || !m || !d) return fail('time', 'Pick a date and a start time.');
+    if (!(duration >= 5)) return fail('duration', 'It needs to last at least 5 minutes.');
     setError('');
+    setBadField(null);
     const start = zonedToEpoch({ year: y, month: m, day: d, ...hm }, tz);
     const typedAddress = kind === 'appointment' ? address.trim() : '';
     const c = pager.addCommitment(
@@ -72,7 +86,15 @@ export function AddForm({ pager }: { pager: PagerApi }) {
 
       <label className="field">
         <span>What</span>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={kind === 'focus' ? 'Quarterly taxes' : 'Dentist cleaning'} required />
+        <input
+          ref={titleRef}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={kind === 'focus' ? 'Quarterly taxes' : 'Dentist cleaning'}
+          required
+          aria-invalid={badField === 'title' || undefined}
+          aria-describedby={badField === 'title' ? `${id}-error` : undefined}
+        />
       </label>
 
       <div className="field-row">
@@ -82,16 +104,33 @@ export function AddForm({ pager }: { pager: PagerApi }) {
         </label>
         <label className="field">
           <span>Starts at</span>
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
+          <input
+            ref={timeRef}
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            required
+            aria-invalid={badField === 'time' || undefined}
+            aria-describedby={badField === 'time' ? `${id}-error` : undefined}
+          />
         </label>
         <label className="field field--narrow">
           <span>Minutes</span>
-          <input type="number" min={5} step={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} />
+          <input
+            ref={durationRef}
+            type="number"
+            min={5}
+            step={5}
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+            aria-invalid={badField === 'duration' || undefined}
+            aria-describedby={badField === 'duration' ? `${id}-error` : undefined}
+          />
         </label>
       </div>
 
       {kind === 'appointment' ? (
-        <div className="field-row">
+        <div className="field-row field-row--top">
           <label className="field">
             <span>Where</span>
             <select value={placeId} onChange={(e) => setPlaceId(e.target.value)}>
@@ -105,8 +144,14 @@ export function AddForm({ pager }: { pager: PagerApi }) {
           </label>
           <label className="field">
             <span>Or type an address</span>
-            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="22 Elm Court, Hollow Creek" maxLength={200} autoComplete="off" />
-            <small>An address that is not saved yet is looked up once; if it is not found, the default travel time is used.</small>
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="22 Elm Court, Hollow Creek"
+              maxLength={200}
+              autoComplete="off"
+              aria-describedby={`${id}-address`}
+            />
           </label>
           <label className="field">
             <span>Getting ready really takes (min)</span>
@@ -115,6 +160,9 @@ export function AddForm({ pager }: { pager: PagerApi }) {
               Planned as {honest} min (x{settings.honestyFactor} honesty factor).
             </small>
           </label>
+          <small id={`${id}-address`} className="field-note">
+            An address that is not saved yet is looked up once; if it is not found, the default travel time is used.
+          </small>
         </div>
       ) : (
         <label className="field">
@@ -141,7 +189,7 @@ export function AddForm({ pager }: { pager: PagerApi }) {
       </fieldset>
 
       {error && (
-        <p className="form-error" role="alert">
+        <p className="form-error" role="alert" id={`${id}-error`}>
           {error}
         </p>
       )}

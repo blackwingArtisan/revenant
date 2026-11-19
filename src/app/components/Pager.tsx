@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { BOOT_CODE, MISSED_CODE } from '../../engine/codes';
+import { bootCode, type BootPhase } from '../boot';
 import { lcdClock, readableClock } from '../../engine/time';
 import type { PagerApi } from '../usePager';
 
@@ -77,7 +78,7 @@ function useOffscreen<T extends Element>() {
   return [ref, offscreen] as const;
 }
 
-export function Pager({ pager }: { pager: PagerApi }) {
+export function Pager({ pager, boot = null }: { pager: PagerApi; boot?: BootPhase | null }) {
   const { shown, active, readIndex, memory, now, tz, sound } = pager;
   const [deviceRef, offscreen] = useOffscreen<HTMLDivElement>();
   const paging = active.length > 0 && readIndex === null;
@@ -85,13 +86,17 @@ export function Pager({ pager }: { pager: PagerApi }) {
   const loud = paging && top !== undefined && !top.silent;
   const memoryStatus = readIndex !== null && shown ? (pager.runtime.acks[shown.pageId] !== undefined ? 'ACK' : 'NEW') : null;
 
-  const state = readIndex !== null ? 'reading' : paging ? (loud ? 'paging' : 'quiet') : 'idle';
+  const booting = boot !== null && !paging && readIndex === null;
+  const state = booting ? 'booting' : readIndex !== null ? 'reading' : paging ? (loud ? 'paging' : 'quiet') : 'idle';
   const level = shown?.level ?? 0;
 
   let code = '';
   let text = '';
   let corner = '';
-  if (readIndex !== null && shown) {
+  if (booting) {
+    code = bootCode(boot);
+    text = boot === 'hello' ? 'hELLO' : '';
+  } else if (readIndex !== null && shown) {
     const missed = pager.runtime.acks[shown.pageId] === undefined && !active.some((p) => p.id === shown.pageId);
     code = missed && !shown.silent ? MISSED_CODE : shown.code;
     text = `${missed && !shown.silent ? 'MISSED: ' : ''}${shown.text}`;
@@ -113,7 +118,9 @@ export function Pager({ pager }: { pager: PagerApi }) {
   const unread = active.length;
   const ghost = memory[readIndex === null ? (paging ? 1 : 0) : readIndex + 1]?.code ?? '';
 
-  const label = paging
+  const label = booting
+    ? 'Pager starting up.'
+    : paging
     ? `Pager is paging: ${code}. ${text}`
     : readIndex !== null
       ? `Message ${readIndex + 1} of ${memory.length}: ${code}. ${text}`
@@ -121,10 +128,10 @@ export function Pager({ pager }: { pager: PagerApi }) {
 
   return (
     <section className="pager-wrap" aria-label="Pager">
-      <div ref={deviceRef} className={`pager pager--${state}`} data-state={state} data-beeps={pager.beeps} data-level={level}>
+      <div ref={deviceRef} className={`pager pager--${state}`} data-state={state} data-boot={booting ? boot : undefined} data-beeps={pager.beeps} data-level={level}>
         <div className="pager-clip" aria-hidden="true" />
         <div className="pager-top">
-          <span className={`pager-led ${loud ? 'pager-led--on' : ''}`} aria-hidden="true" />
+          <span className={`pager-led ${loud || (booting && boot === 'hello') ? 'pager-led--on' : ''}`} aria-hidden="true" />
           <span className="pager-brand">REVENANT</span>
           <span className="pager-model">RV-911</span>
         </div>

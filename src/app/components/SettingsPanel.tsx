@@ -6,9 +6,9 @@ import type { PagerApi } from '../usePager';
 const ZONES = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'Europe/London', 'Europe/Berlin', 'Asia/Tokyo', 'Australia/Sydney', 'UTC'];
 
 const ESCALATION_PRESETS: { label: string; value: number[] }[] = [
-  { label: 'Gentle: 5, 10 min', value: [5, 10] },
-  { label: 'Standard: 3, 6, 10 min', value: [3, 6, 10] },
-  { label: 'Relentless: 2, 4, 6, 8 min', value: [2, 4, 6, 8] },
+  { label: '5/10 min', value: [5, 10] },
+  { label: '3/6/10 min', value: [3, 6, 10] },
+  { label: '2/4/6/8 min', value: [2, 4, 6, 8] },
 ];
 
 function PlaceForm({ pager }: { pager: PagerApi }) {

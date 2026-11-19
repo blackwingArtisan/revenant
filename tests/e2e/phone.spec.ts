@@ -19,3 +19,14 @@ test('fits a phone screen and pages from the sample day', async ({ page }) => {
   await expect(page.locator('.pager')).toHaveAttribute('data-state', 'quiet');
   await expect(page.getByTestId('dock')).toHaveCount(0);
 });
+
+test('at 390 px the demo button is above the fold and keyboard hints are hidden', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?fresh&at=2026-11-19T05:00&tz=America/Chicago');
+  await expect(page.getByTestId('demo-cta')).toBeInViewport();
+  const cta = await page.getByTestId('demo-cta').boundingBox();
+  expect(cta!.y + cta!.height).toBeLessThanOrEqual(844);
+  await expect(page.locator('.keys')).toBeHidden();
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual(390);
+});

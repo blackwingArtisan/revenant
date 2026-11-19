@@ -7,6 +7,7 @@ import { ImportPanel } from './components/ImportPanel';
 import { Pager } from './components/Pager';
 import { SettingsPanel } from './components/SettingsPanel';
 import { TimeMachine } from './components/TimeMachine';
+import { useBoot } from './useBoot';
 import { usePager } from './usePager';
 
 const TABS = [
@@ -24,6 +25,7 @@ function isTyping(target: EventTarget | null): boolean {
 
 export default function App() {
   const pager = usePager();
+  const boot = useBoot(pager.sound);
   const [tab, setTab] = useState<TabId>('add');
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -74,7 +76,7 @@ export default function App() {
           The pager, back from the dead for ADHD brains. It only goes off when you need to <em>act</em>.
         </p>
         <div className="hero">
-          <button type="button" className="cta" onClick={pager.demoDay} data-testid="demo-cta">
+          <button type="button" className={`cta${boot.booted ? ' cta--wake' : ''}`} onClick={pager.demoDay} data-testid="demo-cta">
             <span className="cta-led" aria-hidden="true" />
             Watch a day in about a minute
           </button>
@@ -97,7 +99,7 @@ export default function App() {
 
       <main className="layout">
         <div className="col col--device">
-          <Pager pager={pager} />
+          <Pager pager={pager} boot={boot.phase} />
           <p className="keys">
             Keys: <kbd>A</kbd> ACK · <kbd>R</kbd> read memory · <kbd>M</kbd> mute · <kbd>N</kbd> next page
           </p>

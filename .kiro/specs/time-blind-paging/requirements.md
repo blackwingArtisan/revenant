@@ -114,6 +114,11 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 6.16 WHEN the user presses the ACK action on a lock-screen notification, THE SYSTEM SHALL acknowledge that page in the app.
 6.17 IF a message is wider than the LCD, THEN THE SYSTEM SHALL hold it, scroll it to its end and repeat.
 6.18 IF a message fits the LCD, THEN THE SYSTEM SHALL keep it still.
+6.19 WHEN the app is opened without a test or demo switch (`?at`, `?fresh`, `?sample`, `?speed`), or with `?boot`, THE SYSTEM SHALL play a power-on sequence of about two seconds: a dark LCD, two backlight flickers, 88888, then 07734 hELLO with the LED lit.
+6.20 WHERE the user prefers reduced motion, THE SYSTEM SHALL skip the power-on sequence.
+6.21 WHERE the device supports vibration, WHEN a page beeps, THE SYSTEM SHALL vibrate in the rhythm of the chirp, with more pulses at each escalation level.
+6.22 IF the add form is submitted with a missing or invalid field, THEN THE SYSTEM SHALL mark that field invalid, outline it and move focus to it.
+6.23 WHERE the device has no hover-capable pointer, THE SYSTEM SHALL hide the keyboard hints.
 
 ## Requirement 7: Time machine
 **User story:** As a presenter or tester, I want to drive the clock, so that a whole day can be shown in a minute.
