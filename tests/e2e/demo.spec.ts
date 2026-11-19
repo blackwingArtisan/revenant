@@ -12,9 +12,12 @@ test('one press on an empty pager loads the sample day and runs it, and ACK keep
   await expect(ba).toContainText('illustrative');
   await expect(ba).toContainText('10:15 AM "Dentist in 15 min"');
   await expect(ba).toContainText('37 min late.');
+  await expect(page.getByTestId('ba-leave-alert')).toContainText('10:08 AM "Time to leave"');
+  await expect(page.getByTestId('ba-leave-alert')).toContainText('30 min late.');
   await expect(ba).toContainText('9:33 AM 411 get ready');
   await expect(ba).toContainText('5 min early.');
   await expect(page.getByTestId('neuropage')).toContainText('NeuroPage');
+  await expect(page.getByTestId('hero-stat')).toContainText('42% of patients in an adult ADHD clinic missed three or more appointments');
 
   await page.getByTestId('demo-cta').click();
   await expect(page.getByText('PLAY 900x')).toBeVisible();

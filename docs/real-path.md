@@ -54,4 +54,13 @@ The SDK package `@aws-sdk/client-geo-places` is **not installed** in this reposi
 The shared secret is suitable for a single-user deployment, and it is visible to anyone who can load a relay-mode build, so keep such a build private. A multi-user version would replace it with Amazon Cognito sign-in.
 
 ## Cost shape
-Each beeping page is one SMS (US pricing is a fraction of a cent plus carrier fees) and one short-lived schedule. Routing is one CalculateRoutes request per new route per hour (the app caches by route, mode and departure hour). With a budget of six pages a day, a user costs well under a dollar a month.
+Prices from the AWS pricing pages for End User Messaging, EventBridge Scheduler and Lambda, checked on 2026-11-19. A budget of six pages a day is about 180 pages a month per user.
+
+| Per user, per month | Arithmetic | Cost |
+|---|---|---|
+| SMS to the pager phone (built) | 180 US toll-free texts x ($0.00774 AWS fee + $0.00421 carrier fee) | about $2.15, plus repeats when a page is not ACK'd |
+| Toll-free number (built) | $2 a month lease, shared by every user on the number | $2 / number of users |
+| Web Push (planned default) | 180 Scheduler invocations ($1.00 per million after 14 million free) + about 360 Lambda requests ($0.20 per million after 1 million free) | well under 1 cent |
+| Routing | one CalculateRoutes request per new route per hour (the app caches by route, mode and departure hour) | a few cents at most |
+
+So a relay tier at $3-4 a month covers Web Push with a wide margin, and SMS to an old phone is better priced as an add-on.

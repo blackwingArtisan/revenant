@@ -19,6 +19,14 @@ export interface BeforeAfter {
   phoneLeaveAt: number;
   phoneArriveAt: number;
   phoneLateMinutes: number;
+  /**
+   * A time-to-leave alert (as in Apple Calendar): it fires at start - travel, but it
+   * has no get-ready page, so real prep only starts when it fires.
+   */
+  leaveAlertAt: number;
+  leaveAlertLeaveAt: number;
+  leaveAlertArriveAt: number;
+  leaveAlertLateMinutes: number;
   /** Revenant's pages for the same appointment. */
   readyAt: number;
   leaveAt: number;
@@ -27,10 +35,10 @@ export interface BeforeAfter {
 }
 
 /**
- * The same appointment with an ordinary reminder and with Revenant. With the
- * reminder, real prep (stated prep x the honesty factor) and travel only start
- * when it fires; Revenant pages get-ready and leave-now from the same numbers,
- * exactly as the planner does. Pure.
+ * The same appointment with an ordinary reminder, with a time-to-leave alert and
+ * with Revenant. With either alert, real prep (stated prep x the honesty factor)
+ * and travel only start when it fires; Revenant pages get-ready and leave-now from
+ * the same numbers, exactly as the planner does. Pure.
  */
 export function beforeAfter(i: BeforeAfterInput): BeforeAfter {
   const prep = effectivePrepMinutes(i.prepMinutes, i.settings.honestyFactor) * MINUTE;
@@ -38,6 +46,9 @@ export function beforeAfter(i: BeforeAfterInput): BeforeAfter {
   const phoneAlertAt = i.start - i.phoneLeadMinutes * MINUTE;
   const phoneLeaveAt = phoneAlertAt + prep;
   const phoneArriveAt = phoneLeaveAt + travel;
+  const leaveAlertAt = i.start - travel;
+  const leaveAlertLeaveAt = leaveAlertAt + prep;
+  const leaveAlertArriveAt = leaveAlertLeaveAt + travel;
   const leaveAt = i.start - travel - i.settings.bufferMinutes * MINUTE;
   const readyAt = leaveAt - prep;
   const arriveAt = leaveAt + travel;
@@ -46,6 +57,10 @@ export function beforeAfter(i: BeforeAfterInput): BeforeAfter {
     phoneLeaveAt,
     phoneArriveAt,
     phoneLateMinutes: Math.max(0, Math.round((phoneArriveAt - i.start) / MINUTE)),
+    leaveAlertAt,
+    leaveAlertLeaveAt,
+    leaveAlertArriveAt,
+    leaveAlertLateMinutes: Math.max(0, Math.round((leaveAlertArriveAt - i.start) / MINUTE)),
     readyAt,
     leaveAt,
     arriveAt,

@@ -17,6 +17,7 @@ The idea is not new. In the NeuroPage trial (Wilson, Emslie, Quirk and Evans, *J
 Apple Calendar's time-to-leave alert fires at the moment to leave; Due repeats a reminder until it is done; iOS Scheduled Summary batches notifications into a digest; Tiimo plans the day visually. Revenant is the combination none of them offers: get-ready and leave-now pages from travel and an honest prep time, repeats until ACK, a hard daily beep budget with a silent digest, a learner for late ACKs, travel chained from the previous appointment, and no account. Keep that comparison fair and sourced (`docs/evidence.md`).
 
 ## Why it matters
+- Lead with this one: in an adult ADHD clinic, 42% of patients missed three or more appointments during treatment (Soendergaard et al., *J Clin Psychiatry* 77(2), 2016; a cohort of 151 adults in Denmark).
 - About 15.5 million US adults, 1 in 16, reported a current ADHD diagnosis in 2023, and more than half of them were diagnosed as adults (CDC, *MMWR* 73(40), 2024).
 - Adults with ADHD miss GP appointments about twice as often as matched patients (odds ratio 1.9; McQueenie et al., *PLOS Mental Health* 1(2), 2024), and people with ADHD judge time less accurately across the lifespan (meta-analysis of 824 effect sizes; Metcalfe et al., *Developmental Neuropsychology* 49(1), 2024).
 - Missed appointments are expensive and common in general: a review of 105 studies put the average no-show rate across specialties at about 23% (Dantas et al., *Health Policy* 122(4), 2018).

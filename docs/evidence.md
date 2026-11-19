@@ -27,3 +27,9 @@ The trial population is mostly people with brain injury, not ADHD. Revenant borr
 | Due | App Store listing, *Due - Reminders & Timers.* [apps.apple.com](https://apps.apple.com/app/id390017969) | Auto Snooze re-notifies a missed reminder every 1-60 minutes until it is marked done; no account; no location or travel features listed; Apple platforms only. |
 | iOS Scheduled Summary | Apple, *Human Interface Guidelines: Managing notifications.* [developer.apple.com](https://developer.apple.com/design/human-interface-guidelines/managing-notifications) | Non-urgent notifications are held for a summary at set times; Time Sensitive notifications override scheduled delivery. |
 | Tiimo | Tiimo, *FAQ.* [tiimoapp.com](https://www.tiimoapp.com/faq) | A visual daily planner for neurodivergent people with reminders; plans are billed monthly or yearly and sign-in uses the subscription email. The FAQ does not describe travel time or repeat-until-done reminders. |
+
+## Running cost
+| Claim | Source | What the source says (checked 2026-11-19) |
+|---|---|---|
+| A US toll-free SMS costs $0.01195 | AWS, *AWS End User Messaging pricing*, SMS tab, United States. [aws.amazon.com](https://aws.amazon.com/end-user-messaging/pricing/) | Outbound toll-free: base price $0.00774 and carrier fee $0.00421 per message. A toll-free number leases for $2 a month; a simulator number for $1. |
+| A scheduled Web Push costs a tiny fraction of a cent | AWS, *Amazon EventBridge pricing*, Scheduler. [aws.amazon.com](https://aws.amazon.com/eventbridge/pricing/); AWS, *AWS Lambda pricing*. [aws.amazon.com](https://aws.amazon.com/lambda/pricing/) | Scheduler: 14 million invocations a month free, then $1.00 per million. Lambda: 1 million requests a month free, then $0.20 per million. |

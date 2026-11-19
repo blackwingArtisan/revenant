@@ -83,10 +83,10 @@ export default function App() {
             <span className="cta-led" aria-hidden="true" />
             Watch a day (60 s)
           </button>
-          <p className="why">
-            About 15.5 million US adults, 1 in 16, have a current ADHD diagnosis (
-            <a href="https://www.cdc.gov/mmwr/volumes/73/wr/mm7340a1.htm" rel="noreferrer">
-              CDC, 2024
+          <p className="why" data-testid="hero-stat">
+            <strong>42%</strong> of patients in an adult ADHD clinic missed three or more appointments (
+            <a href="https://doi.org/10.4088/JCP.14m09270" rel="noreferrer">
+              Soendergaard et al., 2016
             </a>
             ). The calendar is rarely the problem. The moment to stand up is.
           </p>

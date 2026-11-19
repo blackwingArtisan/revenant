@@ -4,7 +4,8 @@ import type { PagerApi } from '../usePager';
 
 /**
  * One illustrative morning, worked out by the engine: the same dentist
- * appointment with an ordinary 15-minute reminder and with Revenant.
+ * appointment with an ordinary 15-minute reminder, with a time-to-leave alert
+ * and with Revenant.
  */
 export function BeforeAfter({ pager }: { pager: PagerApi }) {
   const { settings, dayKey, tz } = pager;
@@ -27,6 +28,15 @@ export function BeforeAfter({ pager }: { pager: PagerApi }) {
           </p>
           <p>
             Out the door {t(m.phoneLeaveAt)}. <strong>{m.phoneLateMinutes} min late.</strong>
+          </p>
+        </div>
+        <div className="ba-col ba-col--phone" data-testid="ba-leave-alert">
+          <p className="ba-col-head">Apple time-to-leave</p>
+          <p>
+            <span className="ba-time">{t(m.leaveAlertAt)}</span> "Time to leave"
+          </p>
+          <p>
+            Prep starts then: out {t(m.leaveAlertLeaveAt)}. <strong>{m.leaveAlertLateMinutes} min late.</strong>
           </p>
         </div>
         <div className="ba-col ba-col--pager">

@@ -28,6 +28,7 @@ Maya, 34, is an illustrative persona, not a real user. Dentist at 10:30 AM, 22 m
 | | What fires | What happens |
 |---|---|---|
 | **Her phone** | 10:15 AM "Dentist in 15 min" | Getting ready really takes 30 min, so she is out the door at 10:45 and **37 min late**. |
+| **Apple time-to-leave** | 10:08 AM "Time to leave" | Right about the drive, but nothing told her to get ready: out at 10:38, **30 min late**. |
 | **Revenant** | 9:33 AM `411` get ready, 10:03 AM `911` leave now | She arrives at 10:25, **5 min early**, after two beeps. |
 
 ## Why a pager? It worked before
@@ -36,9 +37,10 @@ In the 1990s, the NeuroPage trial gave people with memory and planning problems 
 We didn't invent this. Phones buried it under a median of 56 notifications a day ([Pielot et al., MobileHCI 2018](https://doi.org/10.1145/3229434.3229445)). We dug it up.
 
 **Why it matters**
+- **In an adult ADHD clinic, 42% of patients missed three or more appointments** during treatment ([Soendergaard et al., *J Clin Psychiatry* 77(2), 2016](https://doi.org/10.4088/JCP.14m09270)).
 - About 15.5 million US adults, 1 in 16, have a current ADHD diagnosis, and more than half were diagnosed as adults ([CDC, *MMWR* 73(40), 2024](https://www.cdc.gov/mmwr/volumes/73/wr/mm7340a1.htm)).
 - Adults with ADHD miss GP appointments about twice as often as matched patients (odds ratio 1.9, [McQueenie et al., *PLOS Mental Health*, 2024](https://doi.org/10.1371/journal.pmen.0000045)), and a meta-analysis of 824 effect sizes finds a consistent deficit in time perception ([Metcalfe et al., *Developmental Neuropsychology*, 2024](https://doi.org/10.1080/87565641.2023.2293712)).
-- Across all specialties, about 23% of appointments are no-shows ([Dantas et al., *Health Policy*, 2018](https://doi.org/10.1016/j.healthpol.2018.02.002)).
+- For comparison, the no-show rate across all specialties averages about 23% ([Dantas et al., *Health Policy*, 2018](https://doi.org/10.1016/j.healthpol.2018.02.002)).
 
 Every figure, with what the source actually says, is in [`docs/evidence.md`](docs/evidence.md).
 
@@ -59,7 +61,7 @@ Based on each maker's own documentation, linked in [`docs/evidence.md`](docs/evi
 
 ## Beyond Kiroween
 - **Free local tier, as it is today.** The pager runs entirely in the browser: no account, no server, nothing leaves the device.
-- **Relay tier, about $3-4 a month.** Pages that arrive with the app closed, real road travel times and address lookup, through a small AWS relay. The estimated running cost is under $1 per user per month at six pages a day (`docs/real-path.md`); the price covers that with room for support.
+- **Relay tier, about $3-4 a month.** Pages that arrive with the app closed, real road travel times and address lookup, through a small AWS relay. At six pages a day, Web Push costs well under a cent per user per month; SMS to an old phone costs about $2.15 a month in texts (180 x $0.01195, AWS pricing checked 2026-11-19), so it fits better as an add-on. The arithmetic is in [`docs/real-path.md`](docs/real-path.md#cost-shape).
 - **Clinics and ADHD coaches.** The no-show problem is the clinic's problem too. A practice or coach can share a calendar (.ics) feed of appointments, and each patient's pager turns it into `411` and `911` pages timed to their own travel and prep. Import of .ics files works today; a subscribed feed is the next step.
 - **Why now.** About a third of US adults with ADHD receive no treatment at all, and 71.5% of those taking a stimulant had trouble filling the prescription in the past year ([CDC, 2024](https://www.cdc.gov/mmwr/volumes/73/wr/mm7340a1.htm)). A free, drug-free, private tool for the moment of leaving the house fills a gap they already feel.
 

@@ -14,6 +14,25 @@ describe('before and after', () => {
     expect([clock(m.readyAt), clock(m.leaveAt), clock(m.arriveAt), m.earlyMinutes]).toEqual(['9:33 AM', '10:03 AM', '10:25 AM', 5]);
   });
 
+  it('shows a time-to-leave alert is right about travel but leaves no time to get ready', () => {
+    const m = mayaMorning(DAY, settings());
+    // Fires at 10:30 - 22 min; 30 min of real prep starts then.
+    expect([clock(m.leaveAlertAt), clock(m.leaveAlertLeaveAt), clock(m.leaveAlertArriveAt), m.leaveAlertLateMinutes]).toEqual([
+      '10:08 AM',
+      '10:38 AM',
+      '11:00 AM',
+      30,
+    ]);
+    // Revenant's get-ready page is the difference: it comes 35 minutes earlier.
+    expect((m.leaveAlertAt - m.readyAt) / 60_000).toBe(35);
+  });
+
+  it('a time-to-leave alert is on time only when there is nothing to get ready for', () => {
+    const m = beforeAfter({ start: at(DAY, 10, 30), travelMinutes: 22, prepMinutes: 0, phoneLeadMinutes: 15, settings: settings() });
+    expect(m.leaveAlertLateMinutes).toBe(0);
+    expect(m.leaveAlertArriveAt).toBe(at(DAY, 10, 30));
+  });
+
   it("gives the same get-ready and leave-now times as the planner", () => {
     const c = appt({ id: 'd', start: at(DAY, 10, 30), prepMinutes: 20 });
     const pages = planDays({ commitments: [c], places: PLACES, settings: settings(), travelMinutes: { d: 22 }, dayKeys: [DAY] }).pages;
