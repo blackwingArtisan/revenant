@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ackLevel, suggestPrepTimes } from '../../src/engine/learn';
 import { planDays } from '../../src/engine/plan';
-import { dayReport, dayReportLine, haunting } from '../../src/engine/report';
+import { dayReport, dayReportLine, haunting, silenceLine } from '../../src/engine/report';
 import { isSampleHistory, sampleDay, sampleHistory, sampleWithHistory, SAMPLE_PLACES } from '../../src/engine/sample';
 import { addDays } from '../../src/engine/time';
 import { appt, at, M, PLACES, settings, TZ } from './helpers';
@@ -40,6 +40,13 @@ describe('end-of-day report', () => {
     const d = planDays({ commitments: sampleDay(DAY, TZ), places: SAMPLE_PLACES, settings: settings(), travelMinutes: {}, dayKeys: [DAY] }).days[0]!;
     const acks = Object.fromEntries(d.pages.map((p) => [p.id, p.fireAt]));
     expect(dayReportLine(dayReport(d, acks, at(DAY, 23))!)).toBe('That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed.');
+  });
+
+  it('reads the silence budget back against a typical phone day', () => {
+    const r = { dayKey: DAY, beeps: 6, budget: 6, keptQuiet: 4, missed: 0, firstBeep: 6 };
+    expect(silenceLine(r)).toBe('6 beeps vs about 56 on a typical phone: 50 interruptions you did not get.');
+    expect(silenceLine({ ...r, beeps: 1 })).toBe('1 beep vs about 56 on a typical phone: 55 interruptions you did not get.');
+    expect(silenceLine({ ...r, beeps: 60 })).toMatch(/: 0 interruptions you did not get\.$/);
   });
 
   it('has no report for a day with nothing that beeps', () => {

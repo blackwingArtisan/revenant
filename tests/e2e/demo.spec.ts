@@ -106,6 +106,8 @@ test('the demo day takes about a minute and one ACK per budgeted beep', async ({
   expect(seconds).toBeLessThanOrEqual(75);
   await expect(page.getByTestId('day-report-line')).toHaveText('That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed.');
   await expect(report).toContainText('6 of 6 answered on the first beep');
+  await expect(page.getByTestId('silence-line')).toHaveText('6 beeps vs about 56 on a typical phone: 50 interruptions you did not get.');
+  await expect(report).toContainText('0 missed');
   await expect(page.getByText('PAUSED')).toBeVisible();
   await expect(page.getByTestId('announcer')).toHaveText('That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed.');
 

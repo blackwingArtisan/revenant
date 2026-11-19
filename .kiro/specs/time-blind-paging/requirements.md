@@ -149,6 +149,8 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 7.13 WHEN the URL has `?fresh`, THE SYSTEM SHALL ignore saved state.
 7.14 WHEN the user presses the demo control on an empty pager, THE SYSTEM SHALL load the sample day first.
 7.15 WHILE a day run is paused on a page that does not count toward the daily budget (the digest, a check-in or a wrap-up), WHEN 1.5 seconds pass without an ACK, THE SYSTEM SHALL mark that page read and resume the run at 900x.
+7.16 WHEN a day run ends, THE SYSTEM SHALL print the receipt as a narrow thermal tear-off listing beeps against the silence budget, first-beep ACKs, items kept quiet and missed pages, stamped "0 missed" or "<n> RIP", without the print motion WHERE the user prefers reduced motion.
+7.17 WHEN the receipt shows, THE SYSTEM SHALL compare the day's beeps with the median of 56 notifications a day on a phone (Pielot et al., 2018) and state how many interruptions the day did not have.
 
 ## Requirement 8: Adapters and the real path
 **User story:** As an operator, I want real routing and SMS behind the same interfaces, so that the free local demo and the production path share all logic.

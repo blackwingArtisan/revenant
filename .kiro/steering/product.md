@@ -28,7 +28,7 @@ Apple Calendar's time-to-leave alert fires at the moment to leave; Due repeats a
 1. **Pages at the moment to act.** For each commitment it computes a get-ready page (411) and a leave-now page (911) from travel time, a buffer, and the user's own honest prep time.
 2. **Corrects for time blindness.** Stated prep time is multiplied by an honesty factor (default x1.5). Travel is estimated from the place the user will actually be, including the previous appointment.
 3. **Escalates like a real pager.** An unanswered page repeats ("911 911", "911 911 911") on a fixed cadence until ACK, and stops the moment it becomes moot.
-4. **Keeps a strict budget.** At most N beeping pages per local day (default 6). Everything else goes into one silent digest page. Low-priority items never beep.
+4. **Keeps a strict silence budget.** At most N beeping pages per local day (default 6). Everything else goes into one silent digest page. Low-priority items never beep.
 5. **Body doubles.** A focus block pages at its start (121), checks in on a cadence, and pages a wrap-up (200).
 6. **Imports a calendar.** A local .ics file (Google, Apple, Outlook exports) becomes commitments, matched to saved places.
 7. **Demos a whole day in a minute.** A time machine (pause, jump, next page, 900x) drives the same engine the real clock drives.

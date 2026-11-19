@@ -45,6 +45,15 @@ export function dayReportLine(r: DayReport): string {
   return `That was your day: ${r.beeps} beep${r.beeps === 1 ? '' : 's'}, ${r.keptQuiet} kept quiet in the digest, ${r.missed} missed.`;
 }
 
+/** Median notifications a phone delivers in a day (Pielot et al., MobileHCI 2018; see docs/evidence.md). */
+export const TYPICAL_PHONE_NOTIFICATIONS = 56;
+
+/** The silence budget, read back: how many interruptions the day did not have. */
+export function silenceLine(r: DayReport): string {
+  const spared = Math.max(0, TYPICAL_PHONE_NOTIFICATIONS - r.beeps);
+  return `${r.beeps} beep${r.beeps === 1 ? '' : 's'} vs about ${TYPICAL_PHONE_NOTIFICATIONS} on a typical phone: ${spared} interruption${spared === 1 ? '' : 's'} you did not get.`;
+}
+
 export interface Haunting {
   /** Stable per day, so dismissing it once keeps it dismissed. */
   id: string;

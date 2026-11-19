@@ -1,5 +1,5 @@
-import { dayReportLine } from '../../engine/report';
-import { localDayKey, readableClock } from '../../engine/time';
+import { dayReportLine, silenceLine, type DayReport } from '../../engine/report';
+import { localDayKey, parseDayKey, readableClock } from '../../engine/time';
 import type { DigestItem, PageStatus, PlannedPage } from '../../engine/types';
 import type { PagerApi } from '../usePager';
 import { Fragment } from 'react';
@@ -35,18 +35,56 @@ const REASON_LABEL: Record<DigestItem['reason'], string> = {
   'all-day': 'All day',
 };
 
+/** "THU NOV 19", printed at the top of the receipt. */
+function receiptDate(r: DayReport): string {
+  const { year, month, day } = parseDayKey(r.dayKey);
+  return new Date(Date.UTC(year, month - 1, day))
+    .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+    .replace(',', '')
+    .toUpperCase();
+}
+
 function EndCard({ pager }: { pager: PagerApi }) {
   const r = pager.endCard;
   if (!r) return null;
   return (
     <section className="receipt" aria-labelledby="receipt-title" data-testid="day-report">
-      <h3 id="receipt-title">End of day</h3>
-      <p className="receipt-line" data-testid="day-report-line">
-        {dayReportLine(r)}
-      </p>
-      <p className="receipt-sub">
-        {r.firstBeep} of {r.beeps} answered on the first beep. Budget used: {r.beeps} of {r.budget}.
-      </p>
+      <div className="receipt-paper">
+        <h3 id="receipt-title">End of day</h3>
+        <p className="receipt-meta">REVENANT RV-911 · {receiptDate(r)}</p>
+        <dl className="receipt-items">
+          <div>
+            <dt>Beeps</dt>
+            <dd>
+              {r.beeps} of {r.budget}
+            </dd>
+          </div>
+          <div>
+            <dt>First-beep ACKs</dt>
+            <dd>{r.firstBeep}</dd>
+          </div>
+          <div>
+            <dt>Kept quiet</dt>
+            <dd>{r.keptQuiet}</dd>
+          </div>
+          <div>
+            <dt>Missed</dt>
+            <dd>{r.missed}</dd>
+          </div>
+        </dl>
+        <p className="receipt-line" data-testid="day-report-line">
+          {dayReportLine(r)}
+        </p>
+        <p className="receipt-silence" data-testid="silence-line">
+          {silenceLine(r)}
+        </p>
+        <p className="receipt-sub">
+          {r.firstBeep} of {r.beeps} answered on the first beep.
+        </p>
+        <span className={`receipt-stamp ${r.missed === 0 ? 'receipt-stamp--clean' : 'receipt-stamp--rip'}`}>
+          {r.missed === 0 ? '0 missed' : `${r.missed} RIP`}
+        </span>
+      </div>
       <span className="advice-actions">
         <button type="button" className="btn btn--primary" onClick={pager.controls.runDay}>
           Run the day again
@@ -111,14 +149,14 @@ function RebookCard({ pager }: { pager: PagerApi }) {
 function BudgetMeter({ used, limit }: { used: number; limit: number }) {
   return (
     <div className="budget" data-testid="budget">
-      <span className="budget-label">Beeps today</span>
+      <span className="budget-label">Silence budget</span>
       <span className="budget-cells" aria-hidden="true">
         {Array.from({ length: limit }, (_, i) => (
           <span key={i} className={`budget-cell ${i < used ? 'budget-cell--used' : ''}`} />
         ))}
       </span>
       <span className="budget-count">
-        {used} of {limit}
+        {used} of {limit} beeps
       </span>
     </div>
   );
