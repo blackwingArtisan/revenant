@@ -304,6 +304,9 @@ kbd {
   .sheet {
     order: 3;
   }
+  .ba {
+    order: 4;
+  }
   .console {
     order: 4;
   }
@@ -807,6 +810,74 @@ kbd {
 .card-row dd {
   margin: 0;
   font: 13.5px/1.35 var(--font-card);
+}
+
+/* ---------- Before and after: one illustrative morning ---------- */
+.ba {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.ba-title {
+  margin: 0;
+  font: 900 18px/1.1 var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.ba-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  font: 600 10.5px/1.4 var(--font-body);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  vertical-align: middle;
+}
+.ba-setup {
+  margin: 6px 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.ba-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.ba-col {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+}
+.ba-col .ba-col-head {
+  margin: 0 0 4px;
+  font: 700 12px/1.2 var(--font-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ba-col p {
+  margin: 2px 0;
+}
+.ba-col--phone strong {
+  color: var(--amber);
+}
+.ba-col--pager {
+  border-color: rgba(157, 255, 110, 0.45);
+}
+.ba-col--pager strong,
+.ba-col--pager code {
+  color: var(--phosphor);
+}
+.ba-col code {
+  font: 19px/1 var(--font-lcd);
+}
+.ba-time {
+  display: inline-block;
+  min-width: 68px;
+  font: 18px/1 var(--font-lcd);
 }
 
 /* ---------- Day sheet: continuous-feed greenbar paper ---------- */

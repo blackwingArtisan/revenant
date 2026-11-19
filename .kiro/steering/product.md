@@ -10,9 +10,17 @@ inclusion: always
 ## Who it is for
 Adults with ADHD (and anyone with time blindness) who miss appointments not because they forgot, but because "the appointment is at 10:30" never turns into "stand up now". Parents juggling pickups. Freelancers whose day is a string of calls and errands. People who have tried every reminder app and learned to swipe them all away.
 
+## It worked before
+The idea is not new. In the NeuroPage trial (Wilson, Emslie, Quirk and Evans, *J Neurol Neurosurg Psychiatry* 70(4), 2001), a randomised crossover study of 143 people with memory and planning problems, more than 80% of those who completed it did significantly better at everyday tasks, including keeping appointments, while they carried a pager that sent short reminders at the moment to act. The participants were mostly people with brain injuries, not ADHD, so Revenant borrows the mechanism and never claims the trial's results. Line for the product: "We didn't invent this. Phones buried it. We dug it up."
+
+## Why not the tools people already have
+Apple Calendar's time-to-leave alert fires at the moment to leave; Due repeats a reminder until it is done; iOS Scheduled Summary batches notifications into a digest; Tiimo plans the day visually. Revenant is the combination none of them offers: get-ready and leave-now pages from travel and an honest prep time, repeats until ACK, a hard daily beep budget with a silent digest, a learner for late ACKs, travel chained from the previous appointment, and no account. Keep that comparison fair and sourced (`docs/evidence.md`).
+
 ## Why it matters
 - About 15.5 million US adults, 1 in 16, reported a current ADHD diagnosis in 2023, and more than half of them were diagnosed as adults (CDC, *MMWR* 73(40), 2024).
-- Missed appointments are expensive and common: a review of 105 studies put the average no-show rate across specialties at about 23% (Dantas et al., *Health Policy* 122(4), 2018).
+- Adults with ADHD miss GP appointments about twice as often as matched patients (odds ratio 1.9; McQueenie et al., *PLOS Mental Health* 1(2), 2024), and people with ADHD judge time less accurately across the lifespan (meta-analysis of 824 effect sizes; Metcalfe et al., *Developmental Neuropsychology* 49(1), 2024).
+- Missed appointments are expensive and common in general: a review of 105 studies put the average no-show rate across specialties at about 23% (Dantas et al., *Health Policy* 122(4), 2018).
+- Phones deliver a median of 56 notifications a day (Pielot et al., MobileHCI 2018); a page has to stand out from that. Use "dozens" or this sourced figure, never an invented one.
 - Revenant targets the gap between knowing about an appointment and leaving for it. It does not claim to treat ADHD.
 
 ## What Revenant does

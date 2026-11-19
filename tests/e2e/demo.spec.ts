@@ -7,6 +7,15 @@ test('one press on an empty pager loads the sample day and runs it, and ACK keep
   await page.goto('/?fresh&at=2026-11-19T05:00&tz=America/Chicago');
   await expect(page.getByTestId('page-row')).toHaveCount(0);
 
+  // The first screen makes the case: the illustrative before/after, worked out by the engine, and the trial that came before.
+  const ba = page.getByTestId('before-after');
+  await expect(ba).toContainText('illustrative');
+  await expect(ba).toContainText('10:15 AM "Dentist in 15 min"');
+  await expect(ba).toContainText('37 min late.');
+  await expect(ba).toContainText('9:33 AM 411 get ready');
+  await expect(ba).toContainText('5 min early.');
+  await expect(page.getByTestId('neuropage')).toContainText('NeuroPage');
+
   await page.getByTestId('demo-cta').click();
   await expect(page.getByText('PLAY 900x')).toBeVisible();
   await expect(page.getByTestId('page-row').first()).toBeVisible();

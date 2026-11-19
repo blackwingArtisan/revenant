@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { AddForm } from './components/AddForm';
+import { BeforeAfter } from './components/BeforeAfter';
 import { CodeCard } from './components/CodeCard';
 import { DaySheet } from './components/DaySheet';
 import { ImportPanel } from './components/ImportPanel';
@@ -84,6 +85,13 @@ export default function App() {
             </a>
             ). The calendar is rarely the problem. The moment to stand up is.
           </p>
+          <p className="why why--then" data-testid="neuropage">
+            It worked before: in the NeuroPage trial, more than 80% of the people who finished it, most of them living with a brain injury, managed everyday tasks better with a pager (
+            <a href="https://doi.org/10.1136/jnnp.70.4.477" rel="noreferrer">
+              Wilson et al., 2001
+            </a>
+            ). Phones buried it. We dug it up.
+          </p>
         </div>
       </header>
 
@@ -98,6 +106,7 @@ export default function App() {
         </div>
 
         <div className="col col--work">
+          <BeforeAfter pager={pager} />
           <DaySheet pager={pager} />
           <section className="console" aria-label="Plan your day">
             <div className="tabs" role="tablist" aria-label="Console" onKeyDown={onTabKey}>
