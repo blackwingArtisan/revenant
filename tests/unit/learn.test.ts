@@ -127,6 +127,13 @@ describe('learning from late ACKs', () => {
     expect(suggestPrepTimes(input(routine(days, { prepMinutes: 0 }), acksAfter(days, [7, 7, 7])))).toEqual([]);
   });
 
+  it('leaves out a routine member with no prep time, so applying the suggestion adds no get-ready page', () => {
+    // Found by the learner property in properties.test.ts: a zero-prep visit ahead in the same routine.
+    const c = [...routine(DAYS.slice(0, 3)), appt({ id: 'dentist-next', title: 'Dentist', start: at('2026-11-23', 10, 30), prepMinutes: 0 })];
+    const [s] = suggestPrepTimes(input(c, acksAfter(DAYS, [5, 5, 0])));
+    expect(s?.commitmentIds).toEqual(['dentist-2026-11-16', 'dentist-2026-11-17', 'dentist-2026-11-18']);
+  });
+
   it('gives at most one suggestion per routine, and one for each routine that qualifies', () => {
     const dentist = routine(DAYS);
     const gym = DAYS.map((d) => appt({ id: `gym-${d}`, title: 'Gym', placeId: 'gym', start: at(d, 17), prepMinutes: 10 }));

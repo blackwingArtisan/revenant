@@ -26,6 +26,14 @@ describe('lead times', () => {
     expect(ready?.text).toBe('GET READY: DENTIST 10:30A. LEAVE 10:10A');
   });
 
+  it('never pages a video call at its start, even with no buffer and no prep', () => {
+    // Found by the start-time property in properties.test.ts.
+    const c = appt({ id: 'call', start: at(DAY, 10, 30), placeId: 'online', prepMinutes: 0 });
+    const [join] = planDays(input({ commitments: [c], settings: settings({ bufferMinutes: 0 }) })).pages;
+    expect(join?.kind).toBe('leave-now');
+    expect(join?.fireAt).toBe(at(DAY, 10, 28));
+  });
+
   it('applies the honesty factor to stated prep time', () => {
     const c = appt({ id: 'a', start: at(DAY, 10, 30), prepMinutes: 20 });
     const plan = planDays(input({ commitments: [c], travelMinutes: { a: 15 }, settings: settings({ honestyFactor: 1 }) }));

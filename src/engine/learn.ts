@@ -132,7 +132,8 @@ export function suggestPrepTimes(input: LearnInput): PrepSuggestion[] {
       routineKey: key,
       commitmentId: latest.id,
       commitmentIds: input.commitments
-        .filter((c) => c.kind === 'appointment' && !c.allDay && routineKey(c) === key)
+        // Only commitments that already have a get-ready page: applying never adds one (Req 9.6).
+        .filter((c) => c.kind === 'appointment' && !c.allDay && c.prepMinutes > 0 && routineKey(c) === key)
         .sort((a, b) => a.start - b.start || a.id.localeCompare(b.id))
         .map((c) => c.id),
       title: latest.title,

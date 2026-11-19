@@ -109,6 +109,22 @@ The relay is the only piece that can spend money or reach a phone, so it is desi
 - Geocoder error or no result: the typed place keeps no coordinates and uses the default travel time.
 - Suggestions: nothing is ever changed without Apply; dismissed routines stay hidden.
 
+## Correctness properties
+Each property must hold for every input, not only the examples in the unit tests. `tests/unit/properties.test.ts` checks them with fast-check against generated days: 0 to 12 commitments between 6 AM and 10 PM, mixing appointments and focus blocks, real, virtual and missing places, prep times from 0 to 45 minutes, every priority, all-day entries, check-in cadences, budgets from 1 to 8, buffers of 0 to 10 minutes and honesty factors of 1 to 1.5. On a failure fast-check shrinks the input to a minimal counterexample.
+
+| Property | Criteria |
+|---|---|
+| **The silence budget is never exceeded.** No local day has more beeping, budget-counted pages than the daily budget, and low-priority or all-day commitments never beep. | 3.1, 3.4 |
+| **ACK stops every repeat.** For any page and any ACK at or after its first beep, no alert of that page falls after the ACK. | 2.1, 2.2 |
+| **The plan is deterministic.** The same commitments and settings give the same plan, in the same order, whatever order the commitments arrive in. | 1.10 |
+| **Nothing pages at an event's start.** Every beeping page of an appointment fires before its start time. | 1.1, 1.9 |
+| **The learner never adds a page.** Applying every prep-time suggestion to the commitments it names gives a plan with no page id that was not already there. | 9.6 |
+
+The properties found two bugs the examples had missed, both fixed with a regression test beside the examples:
+- With the buffer set to 0, a video call with no prep paged JOIN NOW at its start time. The leave-now page now always leads the start by at least `MIN_LEAVE_LEAD_MIN` (2 minutes).
+- A suggestion listed every appointment of a routine, including ones with no prep time, so applying it could create a get-ready page. Suggestions now list only appointments that already have one.
+
 ## Testing strategy
+- Properties (fast-check): the five correctness properties above.
 - Unit (Vitest): zoned time and DST, lead times, honesty factor, escalation, ACK, coalescing, stale pages, budget ranking and pinning, digest timing, body double, determinism, .ics parsing and recurrence, import matching and merge, the prep-time learner (no history, on-time ACKs, 2 of 3 late, missed pages, rounding, one suggestion per routine, determinism), adapters with stubbed fetch and notification hosts, the local and relay geocoders, the typed-address helpers, relay with stubbed AWS clients including `/geocode`.
 - End to end (Playwright, production build, America/Chicago): add a commitment, time-travel, see 411 then 911 with the right text, ignore it and see 911 911, ACK by button and key; missed page shown as 666; budget and digest; body double; .ics import and re-import; 900x run that pauses on the page; reload persistence; keyboard tabs; phone layout with the docked ACK; axe-core WCAG 2.1 AA scan; reduced motion stops animation but keeps the page; two late ACKs of a routine produce a prep suggestion that Apply turns into an earlier get-ready page, with zero axe violations; typed addresses with and without a saved match; the one-press demo day (sample load, 900x run, ACK resumes); the LCD line starts at the left edge and scrolls only when it overflows; the service worker shows a page as a notification with an ACK action and relays that ACK to the app (full Chromium in new headless mode, which grants notification permission); and the app shell opens offline.

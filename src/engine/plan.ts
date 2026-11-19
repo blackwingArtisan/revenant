@@ -48,9 +48,16 @@ export function travelFor(c: Commitment, places: Map<string, Place>, input: Pick
   return Math.max(0, Math.round(input.travelMinutes[c.id] ?? input.settings.defaultTravelMinutes));
 }
 
-/** When the user must walk out the door. */
+/**
+ * The shortest lead a leave-now page ever gets. A video call with no buffer
+ * would otherwise page at the start time, which is the moment Revenant exists
+ * to avoid (Req 1.9).
+ */
+export const MIN_LEAVE_LEAD_MIN = 2;
+
+/** When the user must walk out the door (or open the call): never later than {@link MIN_LEAVE_LEAD_MIN} before the start. */
 export function leaveTime(c: Commitment, travelMin: number, settings: Settings): number {
-  return c.start - (travelMin + settings.bufferMinutes) * MINUTE;
+  return c.start - Math.max(travelMin + settings.bufferMinutes, MIN_LEAVE_LEAD_MIN) * MINUTE;
 }
 
 function page(
