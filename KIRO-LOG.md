@@ -1,95 +1,37 @@
 # Kiro log
 
-How Kiro is used on this project: what is in `.kiro/`, how it was produced, and what is still to come.
+How Revenant uses Kiro: what is in [`/.kiro`](.kiro), what Kiro built, and where the proof is.
 
-## What is in `.kiro/`
-- **Steering** (`.kiro/steering/`): `product.md` (the thesis, who it is for, the evidence, the non-negotiable paging rules), `tech.md` (stack, pure-engine rules, the adapter table), `structure.md` (where code lives and the checklist for adding a page kind or an external service). All three use `inclusion: always`.
-- **Spec** (`.kiro/specs/time-blind-paging/`): `requirements.md` with ten requirements and numbered EARS acceptance criteria, `design.md` (architecture, components, data models, algorithms, error handling, threat model, testing strategy) and `tasks.md` (a checklist mapped to requirement numbers; 37 tasks, 29 done and 8 open).
-- **Hooks** (`.kiro/hooks/`, one `.json` file each in Kiro's current format: `"version": "v1"` and a `hooks` array):
-  - `test-on-save.json`: `PostFileSave` on a TypeScript file under `src/` or `tests/unit/`; runs `npm test`.
-  - `page-budget-guard.json`: `PostFileSave` on `plan.ts`, `alerts.ts`, `runtime.ts`, `codes.ts` or `learn.ts`; an agent hook that restates the paging rules (page at the action, the daily budget, a pure engine, ACK cancels repeats, the learner only suggests) and asks for a unit test.
-  - `engine-purity-guard.json`: `PostFileSave` on any file under `src/engine/`; runs `npm run check:engine`, a unit test that fails if engine code reads the clock, randomness, storage, the network or browser globals, or imports from outside the engine.
-  - `check-on-stop.json`: `Stop`; runs `npm run check` (typecheck and unit tests).
-  - `codes-card-sync.json`: `PostFileSave` on `codes.ts`; an agent hook that checks the wallet code card and the README table still match.
-  - `demo-ready.json`: `Manual`; runs `npm run demo:ready`, which builds the site and plays the one-press demo end to end.
-- **Custom agent** (`.kiro/agents/revenant-engine.json`): an agent scoped to the engine, its unit tests and the spec, with the steering files and the spec as resources, write access limited to `src/engine/`, `tests/unit/` and `.kiro/specs/`, and dependency installs and pushes denied.
-- **MCP** (`.kiro/settings/mcp.json`): the AWS Documentation MCP server and Context7, for checking AWS request shapes and library APIs against current documentation.
+## Kiro features at a glance
+| Kiro feature | Where | How it is used | Proof |
+|---|---|---|---|
+| **Spec-driven development** | [`.kiro/specs/time-blind-paging/`](.kiro/specs/time-blind-paging) | 10 requirements with 145 numbered EARS acceptance criteria, a design with algorithms and a threat model, and 41 tasks (33 done, 8 open), each mapped to the criteria it satisfies. Every feature since the first build lands as a checked task with its criteria. | [`requirements.md`](.kiro/specs/time-blind-paging/requirements.md), [`tasks.md`](.kiro/specs/time-blind-paging/tasks.md) |
+| **Spec task execution** | Tasks 25 and 26 | Kiro took two open tasks from the spec to done: it wrote the criteria and design sections first, then the code and tests, then checked the tasks off. | [`src/engine/learn.ts`](src/engine/learn.ts), [`src/adapters/geocode.ts`](src/adapters/geocode.ts), [session A](docs/kiro-sessions/2026-11-19-session-a.md) |
+| **Spec review** | `requirements.md`, `tasks.md` | Kiro rewrote every acceptance criterion into strict EARS form, audited each task against the code and tests, unchecked one that had no test, and added seven gap tasks. | [Session A, "Spec changes"](docs/kiro-sessions/2026-11-19-session-a.md#spec-changes) |
+| **Steering** | [`.kiro/steering/`](.kiro/steering) | `product.md` (the paging rules and the evidence), `tech.md` (the pure-engine rule and the adapters), `structure.md` (where code goes and the checklist for a new page kind). Always included. | The three files |
+| **Hooks** | [`.kiro/hooks/`](.kiro/hooks) | Six hooks: unit tests on save, an agent hook that restates the paging rules when the planner changes, an engine-purity guard, a typecheck on stop, an agent hook that keeps the wallet code card in sync, and a manual "demo ready" run. Kiro converted four of them to the current format. | The six `.json` files; [session A, "Hook changes"](docs/kiro-sessions/2026-11-19-session-a.md#hook-changes) |
+| **Custom agent** | [`.kiro/agents/revenant-engine.json`](.kiro/agents/revenant-engine.json) | An engine-only agent: steering and spec as resources, writes limited to `src/engine/`, `tests/unit/` and the spec, installs and pushes denied. | The agent file |
+| **MCP** | [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json) | The AWS Documentation server and Context7, for checking AWS request shapes and library APIs against current documentation. | The settings file |
+| **Autonomous agent run** | `kiro-cli chat --v3 --no-interactive` | A 13-minute unattended session that read the steering, changed the spec, code, tests, hooks and docs, ran `npm run check` itself and caught its own bug. | [Session A](docs/kiro-sessions/2026-11-19-session-a.md) |
+
+## What Kiro built
+- **The late-ACK learner** ([`src/engine/learn.ts`](src/engine/learn.ts), 15 unit tests). If the leave-now page for a routine is answered late in 2 of the last 3 times, the day sheet suggests more prep time. It only suggests; nothing changes until the user presses Apply. One of Kiro's own new tests caught an ordering bug in the learner, and Kiro fixed it in the same session.
+- **The geocoder port** ([`src/adapters/geocode.ts`](src/adapters/geocode.ts), 13 unit tests), a free saved-places geocoder, a relay geocoder, and the relay's `/geocode` route for Amazon Location Service Places, with 7 route tests.
+- **The spec as it stands**: every criterion in EARS form, Requirements 9 and 10, the design sections for both features, and the gap tasks that keep the spec honest about what is untested.
+- **The hooks in the current format**, with one anchored regex matcher each.
+- Two Playwright tests for the new features. After the session, the developer ran the whole suite: 128 of 128 unit tests (93 before) and 19 of 19 end-to-end tests (16 before), with nothing to fix.
 
 ## Who did what
 | Part | Produced by |
 |---|---|
-| Steering files, the first spec draft and the first build (engine, pager UI, time machine, .ics import, relay) | Drafted in Kiro's spec format before the Kiro pass, then built task by task from `tasks.md` |
-| EARS rewrite of every acceptance criterion, the task audit and seven new gap tasks | Kiro (the pass below) |
-| The late-ACK learner, the geocoder port, both geocoders, the relay's `/geocode` route and their tests | Kiro (the pass below); one of its own tests caught an ordering bug, which it fixed |
-| Conversion of the four hooks to the current format | Kiro (the pass below) |
-| Running the Playwright suite after the pass | Operator |
-| Relay hardening, sample history and the end-of-day receipt, the before/after strip, the power-on sequence, vibration, the 666 haunting, the purity guard, the custom agent and the MCP configuration | Built after the pass outside Kiro, each recorded as a checked task in `tasks.md` with its requirement numbers |
+| EARS rewrite of every criterion, the task audit and seven gap tasks | Kiro (session A) |
+| The late-ACK learner, the geocoder port, both geocoders, the relay's `/geocode` route and their tests | Kiro (session A) |
+| Conversion of four hooks to the current format | Kiro (session A) |
+| Steering, the first spec draft and the first build (engine, pager UI, time machine, .ics import, relay) | The developer, in Kiro's spec format, task by task from `tasks.md` |
+| Everything after session A (tasks 34-41: relay hardening, the receipt, the before/after card, the boot sequence, the 666 haunting, the purity guard, the custom agent, the MCP settings, the phone fit and the 60-second demo) | The developer, each recorded as a checked task with its criteria |
+| Running the Playwright suite after the session | The developer |
 
-## Review fixes
-A clean-clone review found the LCD message clipped on first view, no one-press way into the demo, a copy typo on the code card and no automated test for the service worker. Task 24 in `tasks.md` records the fixes, with new acceptance criteria 6.8, 6.9, 7.5 and 7.6.
+## Sessions
+- [Session A](docs/kiro-sessions/2026-11-19-session-a.md), 2026-11-19: spec review, tasks 25 and 26, hook conversion. 13 min 2 s, 22.34 of 4,000 bonus credits, exit code 0. The exact prompt, every changed file and what was left open are in the record.
 
-## Kiro pass (kiro-cli v3, bonus credits)
-
-- **When:** 2026-11-19, 03:23 to 03:36 UTC (13 min 2 s wall time, under a 25-minute cap; exit code 0).
-- **Command** (repo root, stdin closed):
-  `kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command "<prompt>" </dev/null`
-- **Credits used:** 22.34 of the 4,000 `kiroween2026` bonus credits (`/usage` read 100.91 before the call and 123.25 after).
-- **What Kiro did:** reviewed the spec against the code and tests, rewrote the criteria in EARS form, wrote the late-ACK
-  learner (`src/engine/learn.ts`) and its day-sheet suggestion, the geocoder port, both geocoders and the relay's
-  `/geocode` route, their unit tests and two new Playwright tests, converted the four hooks, updated the README, docs
-  and steering, and ran `npm run check` itself. One of its own new tests caught an ordering bug in the learner, which
-  it fixed in the same session.
-- **After the call (operator):** full suite re-run: Vitest 128 of 128 (93 before the pass), Playwright 19 of 19 (16 before;
-  both new tests pass). Nothing needed fixing. Before the call the operator made the end-to-end port overridable with
-  `PW_PORT`, so local runs can avoid a busy port.
-
-### Exact prompt
-
-> You are working in the Revenant repository (a pager PWA for people with ADHD; TypeScript, React 19, Vite, Vitest, Playwright with axe-core; an optional AWS Lambda relay in src/relay). Read .kiro/steering/product.md, tech.md and structure.md first and follow them, especially the pure-engine rule: nothing under src/engine reads Date.now(), randomness, storage or the network. Work only inside this repository. Do not add, remove or upgrade any npm dependency, do not run npm install, do not use git, and do not deploy or call any network service or AWS. Keep wording professional and use invented sample data only.
->
-> Do these four jobs in order.
->
-> 1. Spec review. Read .kiro/specs/time-blind-paging/requirements.md, design.md and tasks.md and compare them with the code in src/ and the tests in tests/. Tighten every acceptance criterion into strict EARS form (WHEN / WHILE / IF ... THEN / WHERE ... THE SYSTEM SHALL ...), one testable behavior per criterion, keeping existing numbering so task references stay valid (append new criteria at the end of a requirement). Mark a task [x] only if code and a test really implement it. Add a new unchecked task for every gap you find, with its requirement numbers.
->
-> 2. Implement the two open tasks, 25 and 26. For each, first add EARS acceptance criteria to requirements.md (a new requirement or new criteria appended to an existing one), a short section in design.md and sub-tasks under the task in tasks.md with their requirement numbers; then build it with tests; then check it off.
->    a. Task 25, learn from late ACKs. When leave-now (911) pages for the same commitment are often acknowledged only after they escalate (the task's "level 2 or later" means the second beep or later, which is alert level 1 or more in src/engine/alerts.ts: "STILL HERE?" or "NOW!!"), the person's prep time is too short. Add a pure engine function (for example src/engine/learn.ts) that takes the planned pages, the ACK times from the runtime state and the settings, works out the level at which each leave-now page was acknowledged, and returns at most one suggestion per commitment: a new prep time in whole minutes, rounded up to 5, larger than the current one by roughly how late the ACKs were, only when at least 2 of the last 3 acknowledged leave-now pages for that commitment were acknowledged at level 1 or later. Missed pages count as late. It must never change anything itself. Show the suggestion in the app where the commitment's prep time is visible (day sheet or settings), with plain text such as "You often ACK this one late. Try 25 min prep instead of 15." and an Apply button and a Dismiss button; Apply updates the commitment's prep time through the existing state path, Dismiss hides it for that commitment. Keep it keyboard accessible and keep zero axe violations. Add Vitest tests for the function (no history, on-time ACKs, 2 of 3 late, missed pages, rounding, one suggestion per commitment, determinism) and one Playwright test in tests/e2e that runs a short day with the time machine, lets a leave-now page escalate before ACK twice, and sees the suggestion and applies it. Use the same helpers and selectors as the existing e2e tests.
->    b. Task 26, geocoding for typed addresses. Today a typed address without a saved place has no coordinates, so travel time falls back to the default. Add a geocoder port next to the travel adapter (for example `interface Geocoder { readonly name: string; geocode(address: string): Promise<{ lat: number; lon: number; label: string } | null> }`) with a free local default (match against saved places and return null otherwise, never inventing coordinates) and a relay adapter that POSTs to the relay's new `/geocode` endpoint with the shared secret, selected by the same env switch as travel (`VITE_TRAVEL=relay`). In src/relay/handler.ts add the `/geocode` route that calls Amazon Location Service Places (the Geocode operation of the GeoPlaces v2 API) through a narrow `PlacesClient` interface typed locally in handler.ts, like the existing RoutesClient, and returns the first result's position and label, or 404 when there is none; reject an empty or overlong address with 400 and a wrong secret with 401, like the other routes. The SDK package @aws-sdk/client-geo-places is NOT installed and you must not install it, so define the command input and output shapes locally and, in src/relay/lambda.ts, leave the places client unset so `/geocode` answers 501 "geocoding not configured" until an operator adds the package; record that as an unchecked follow-up task and in docs/real-path.md. In the app, when a commitment is added with an address that matches no saved place, call the geocoder once and, on a result, store the coordinates on that commitment's place so travel uses them; on null, keep today's default behavior. Add Vitest tests: the local geocoder (match and no match), the relay geocoder with a stubbed fetch (success, 404, network error gives null), and the relay `/geocode` route with a stub PlacesClient (success, no result, 400, 401, 501 when unset). No test may make a network call.
->    Keep `npm run typecheck` green. Update README.md ("What works today", the adapter table and the test counts) and the steering files where these change what they say.
->
-> 3. Hooks. Kiro's current hook format is .kiro/hooks/<name>.json with "version": "v1" and a "hooks" array (fields: name, description, trigger in PascalCase such as PostFileSave or Stop, matcher regex against the file path, action with type "command" + command or type "agent" + prompt, timeout in seconds, enabled). The four files in .kiro/hooks/ are in the older IDE `.kiro.hook` format ("when"/"then", fileEdited, agentStop, askAgent, runCommand). Convert each one to the current format with the same purpose, as test-on-save.json, page-budget-guard.json (also watch the new learn.ts), check-on-stop.json and codes-card-sync.json, turning the glob patterns into one anchored regex matcher, then delete the four .kiro.hook files. Make sure every command they run exists in package.json. Update KIRO-LOG.md's "What is in .kiro/" list, the README and anything else that describes the hooks.
->
-> 4. KIRO-LOG.md. Its "## Kiro pass" section currently says Kiro's review "follows" and that output "will be recorded here", which is no longer true. Replace that paragraph with one plain sentence pointing to the new section, update the task counts in "What is in .kiro/", then append a new section "## Kiro pass (kiro-cli v3, bonus credits)" that lists: each spec change (criteria tightened, tasks checked, tasks added), each source and test file you changed and why, the hook changes, and anything you could not do. Leave a line "Credits used: TO BE FILLED" for the operator to fill in.
->
-> When you finish, run `npm run check` (typecheck and unit tests) and fix any failures you caused. Do not run the Playwright suite yourself; the operator will.
-
-### Spec changes
-- **Criteria tightened (all of them).** Every acceptance criterion in `requirements.md` is now one `WHEN`, `WHILE`, `IF ... THEN` or `WHERE` clause with `THE SYSTEM SHALL` and one testable behavior. Existing numbers were kept. Where one criterion held several behaviors, the first behavior kept its number and the others were appended at the end of the requirement: 1.8-1.10, 2.7-2.9, 3.8-3.9, 4.5-4.7, 5.8-5.18, 6.10-6.18, 7.7-7.14 and 8.8-8.12. The old 8.5 (no secret configured, or a request without it) is now 8.5 and 8.8. The criteria that the product rules imply but the spec lacked were added: no page at an event's start (1.9) and determinism (1.10). The glossary gained routine, late ACK and geocoder.
-- **Tasks checked.** Tasks 1-13 and 15-24 stay checked after comparing each with its code and tests. Task refs were corrected to the new numbers (tasks 3, 5, 6, 8, 12, 13, 23, 24).
-- **Task unchecked.** Task 14 (pager UI) now has sub-tasks: 14.1 is checked (LCD, live region, ACK, READ, 666) and 14.2 is open, because no test asserts the LED, the chirp, MUTE, vibration or the R and M keys.
-- **Tasks added.** Task 25 (late ACKs) with 25.1-25.6 and task 26 (geocoding) with 26.1-26.6, both implemented and checked, with new Requirements 9 and 10 and sections in `design.md`. Open follow-ups: 27 (enable `/geocode` by adding `@aws-sdk/client-geo-places`), 28 (focus-start 20-minute window test), 29 (URL-switch parsing as a tested pure function), 30 (test that the browser code imports no AWS SDK), 31 (import without network, warning display, place form), 32 (Dismiss and reload behavior of suggestions), 33 (time machine buttons and `?speed=`).
-
-### Source and test files
-- `src/engine/learn.ts` (new): the pure learner `suggestPrepTimes`, with `ackLevel` and `routineKey`. A commitment has one leave-now page, so "pages for the same commitment" is read as pages of the same routine: same title at the same place.
-- `tests/unit/learn.test.ts` (new): 15 tests for the learner.
-- `src/adapters/geocode.ts` (new): the `Geocoder` port, `SavedPlacesGeocoder`, `RelayGeocoder`, `placeForTypedAddress` and `locatePlace`.
-- `tests/unit/geocode.test.ts` (new): 13 tests for both geocoders, the typed-address helpers and travel after geocoding.
-- `src/adapters/select.ts`: selects the geocoder with the travel switch and lists it in the adapter summary. `tests/unit/adapters.test.ts` is unchanged; the selection test is in `geocode.test.ts`.
-- `src/adapters/resolve-travel.ts`: the route cache key now includes coordinates, so a place geocoded later is not stuck on the cached "unknown" answer.
-- `src/adapters/storage.ts`: optional `prepAdvice` in the snapshot (dismissed routines and apply times), so older snapshots still load.
-- `src/relay/handler.ts`: the `/geocode` route, a locally typed `PlacesClient`, `GeocodeInput`, `GeocodeOutput` and `GeocodeRequest`. `src/relay/lambda.ts`: leaves `places` unset, with a comment on how to enable it.
-- `tests/unit/relay.test.ts`: 7 tests for `/geocode` (success, label fallback, 404, 400, 401, 501, 502).
-- `src/app/usePager.ts`: the 14-day history plan, `prepSuggestions`, Apply and Dismiss, persisted advice state, and the typed-address path in `addCommitment`.
-- `src/app/components/PrepAdvice.tsx` (new), `DaySheet.tsx`, `styles.css`: the suggestion card on the day sheet. `AddForm.tsx`: the optional "Or type an address" field.
-- `tests/e2e/learn.spec.ts` (new): two late ACKs on the time machine, the suggestion, an axe scan, Apply from the keyboard. `tests/e2e/geocode.spec.ts` (new): a typed address with and without a saved match. Neither e2e file has been run.
-- Docs: `README.md` (what works today, adapter table, test counts: 128 unit and 19 end-to-end), `docs/real-path.md` (the `/geocode` endpoint and how to enable it), `.env.example`, and the three steering files.
-
-### Hook changes
-The four `.kiro.hook` files (`when` / `then`, `fileEdited`, `agentStop`, `askAgent`, `runCommand`) were converted to the current format and deleted: `test-on-save.json`, `page-budget-guard.json`, `check-on-stop.json` and `codes-card-sync.json`. Each file pairs `"version": "v1"` with a `hooks` array. The glob lists became one anchored regex per hook, for example `^(?:.*/)?src/engine/(?:plan|alerts|runtime|codes|learn)\.ts$`. The page budget guard now also watches `learn.ts` and checks that the learner never changes a commitment or adds a page. The commands `npm test` and `npm run check` exist in `package.json`.
-
-### Not done
-- `/geocode` cannot run on the real path: `@aws-sdk/client-geo-places` is not installed and may not be added in this pass, so `lambda.ts` leaves the places client unset and the route answers 501 (task 27).
-- The Playwright suite was not run inside the pass. *Resolved after the pass:* the operator ran it and both new end-to-end files pass (see "After the call" above).
-- The geocoding success path inside the app (a real relay answer filling in coordinates) is covered by unit tests of the helpers and the relay geocoder, but not by an end-to-end test, because the default build uses the saved-places geocoder.
-- Imported calendar places without coordinates are not geocoded; only addresses typed on the add form are.
-- Open tasks 14.2 and 28-33 are listed above as gaps, not implemented.
-- I could not check that the hook files load in Kiro, only that they are valid JSON and that their matchers behave as intended in a JavaScript regex test. *Still open:* capturing the hooks firing needs a Kiro session.
+Next: a recorded session for the open tasks (14.2 and 27-33), capturing the hooks firing and an MCP lookup.
