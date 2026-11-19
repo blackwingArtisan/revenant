@@ -26,6 +26,12 @@ const adapters = selectAdapters(import.meta.env as Record<string, string | undef
 
 /** How many days of past leave-now pages the pager looks back over when it learns. */
 const LEARN_DAYS = 14;
+/**
+ * In a day run, a stop on a page outside the budget (the quiet digest, a body-double
+ * check-in or wrap-up) holds this long and then carries on by itself, so the viewer
+ * presses ACK only for the budgeted beeps the receipt counts.
+ */
+export const AUTO_RESUME_MS = 1500;
 
 interface Boot {
   clock: SimClock;
@@ -146,6 +152,15 @@ export function usePager() {
   }, []);
   // The end-of-day receipt shown when a day run has answered or missed every page.
   const [endCard, setEndCard] = useState<DayReport | null>(null);
+  // A pending auto-resume after a day run stopped on a page outside the budget.
+  const autoResumeRef = useRef<number | null>(null);
+  const [autoResuming, setAutoResuming] = useState(false);
+  const cancelAutoResume = useCallback(() => {
+    if (autoResumeRef.current !== null) window.clearTimeout(autoResumeRef.current);
+    autoResumeRef.current = null;
+    setAutoResuming(false);
+  }, []);
+  useEffect(() => cancelAutoResume, [cancelAutoResume]);
 
   const tz = settings.timeZone;
   const dayKey = localDayKey(now, tz);
@@ -229,8 +244,28 @@ export function usePager() {
       clock.jumpTo(Math.max(...r.fresh.map((a) => a.at)));
       setNow(clock.now());
       setSpeedState(0);
+      const byId = new Map(plan.pages.map((p) => [p.id, p]));
+      const outsideBudget = r.fresh.every((a) => byId.get(a.pageId)?.countsToBudget === false);
+      if (dayRunRef.current && outsideBudget) {
+        // Not one of the day's budgeted beeps: show it, then mark it read and carry on.
+        cancelAutoResume();
+        const stoppedAt = clock.now();
+        const ids = [...new Set(r.fresh.map((a) => a.pageId))];
+        setAutoResuming(true);
+        autoResumeRef.current = window.setTimeout(() => {
+          autoResumeRef.current = null;
+          setAutoResuming(false);
+          if (!dayRunRef.current || clock.speed !== 0 || clock.now() !== stoppedAt) return;
+          let state = runtimeRef.current;
+          for (const id of ids) if (state.acks[id] === undefined) state = acknowledge(state, id, stoppedAt);
+          setRuntime(state);
+          setReadIndex(null);
+          clock.setSpeed(900);
+          setSpeedState(900);
+        }, AUTO_RESUME_MS);
+      }
     }
-  }, [now, plan, clock, setRuntime]);
+  }, [now, plan, clock, setRuntime, cancelAutoResume]);
 
   // Real path only: hand future beeps to the relay's scheduler so pages go out
   // with the app closed. The time machine never touches a real scheduler.
@@ -280,6 +315,7 @@ export function usePager() {
   const ack = useCallback(
     (pageId?: string) => {
       unlockAudio();
+      cancelAutoResume();
       const target = pageId ?? activePages(plan.pages, runtimeRef.current, clock.now())[0]?.id;
       if (!target) {
         if (hauntingRef.current && readIndexRef.current === null) {
@@ -298,7 +334,7 @@ export function usePager() {
         setSpeedState(900);
       }
     },
-    [plan, clock, setRuntime],
+    [plan, clock, setRuntime, cancelAutoResume],
   );
 
   // ACK from the lock-screen notification, relayed by the service worker.
@@ -319,6 +355,7 @@ export function usePager() {
   const travelTo = useCallback(
     (target: number) => {
       unlockAudio();
+      cancelAutoResume();
       const current = clock.now();
       if (target < current) {
         setRuntime(rewind(plan.pages, runtimeRef.current, target));
@@ -328,12 +365,13 @@ export function usePager() {
       setNow(clock.now());
       setReadIndex(null);
     },
-    [clock, plan, setRuntime],
+    [clock, plan, setRuntime, cancelAutoResume],
   );
 
   const controls = {
     speed,
     dayRun,
+    autoResuming,
     stopOnBeep,
     setStopOnBeep,
     advance: (ms: number) => travelTo(clock.now() + ms),
@@ -345,6 +383,7 @@ export function usePager() {
     },
     setSpeed: (n: number) => {
       unlockAudio();
+      cancelAutoResume();
       setDayRun(false);
       clock.setSpeed(n);
       setSpeedState(n);

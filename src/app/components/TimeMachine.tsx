@@ -26,7 +26,7 @@ export function TimeMachine({ pager }: { pager: PagerApi }) {
         <h2 id="vcr-title" className="vcr-title">
           Time machine
         </h2>
-        <span className="vcr-sub">Demo a whole day in about a minute.</span>
+        <span className="vcr-sub">Demo a whole day in 60 seconds.</span>
       </div>
       <div className="vcr-display" aria-live="off">
         <span className="vcr-date" data-testid="vcr-date">
@@ -91,7 +91,7 @@ export function TimeMachine({ pager }: { pager: PagerApi }) {
       </div>
       {controls.dayRun && controls.speed === 0 && (
         <p className="vcr-hint" data-testid="vcr-hint">
-          Stopped on a page. Press ACK to keep the day running.
+          {controls.autoResuming ? 'Outside the daily budget, so no ACK needed. The day carries on by itself.' : 'Stopped on a page. Press ACK to keep the day running.'}
         </p>
       )}
       <label className="vcr-check">

@@ -29,17 +29,16 @@ test('one press on an empty pager loads the sample day and runs it, and ACK keep
   // First stop: the quiet 7:30 digest. Its message starts at the left edge of the LCD, not clipped.
   await expect(pager(page)).toHaveAttribute('data-state', 'quiet', { timeout: 15_000 });
   await expect(code(page)).toHaveText('100');
-  await expect(page.getByTestId('vcr-hint')).toBeVisible();
+  await expect(page.getByTestId('vcr-hint')).toContainText('carries on by itself');
   const line = page.getByTestId('lcd-text');
   await expect(line).toHaveText(/^DIGEST \d+: /);
   const [box, text] = await Promise.all([page.locator('.lcd-ticker').boundingBox(), line.boundingBox()]);
   expect(text!.x).toBeGreaterThanOrEqual(box!.x - 1);
   expect(text!.x).toBeLessThan(box!.x + 4);
 
-  // ACK resumes the run, which stops again on the next beeping page.
-  await page.keyboard.press('a');
-  await expect(page.getByText('PLAY 900x')).toBeVisible();
+  // The digest is outside the budget, so the run carries on without an ACK and stops on the next beeping page.
   await expect(pager(page)).toHaveAttribute('data-state', 'paging', { timeout: 20_000 });
+  await expect(page.getByTestId('vcr-hint')).toHaveText('Stopped on a page. Press ACK to keep the day running.');
   await expect(code(page)).toHaveText('911');
   await expect(page.getByTestId('vcr-clock')).toContainText('9:25');
 });
@@ -66,21 +65,36 @@ test('a line that fits on the LCD sits still; only an overflowing one scrolls', 
   expect(await anim()).toBe('ticker');
 });
 
-test('the demo day ends on a receipt once every page is answered', async ({ page }) => {
+test('the demo day takes about a minute and one ACK per budgeted beep', async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto('/?fresh&at=2026-11-19T05:00&tz=America/Chicago');
+  const started = Date.now();
   await page.getByTestId('demo-cta').click();
   const report = page.getByTestId('day-report');
 
-  // Answer each page as the run stops on it, then jump to the next one.
-  for (let i = 0; i < 40 && !(await report.isVisible()); i++) {
-    await expect(pager(page)).toHaveAttribute('data-state', /^(paging|quiet)$/, { timeout: 20_000 });
+  // Press ACK only when the run waits for one; quiet pages and check-ins carry on by themselves.
+  let presses = 0;
+  for (let i = 0; i < 20; i++) {
+    const waiting = await page.waitForFunction(
+      () => {
+        if (document.querySelector('[data-testid="day-report"]')) return 'done';
+        const hint = document.querySelector('[data-testid="vcr-hint"]')?.textContent ?? '';
+        return hint.startsWith('Stopped on a page') ? 'ack' : false;
+      },
+      null,
+      { timeout: 60_000 },
+    );
+    if ((await waiting.jsonValue()) === 'done') break;
+    const stoppedAt = await page.getByTestId('vcr-clock').textContent();
     await page.keyboard.press('a');
-    if (await report.isVisible()) break;
-    await page.keyboard.press('n');
+    presses++;
+    await expect(page.getByTestId('vcr-clock')).not.toHaveText(stoppedAt!);
   }
+  const seconds = (Date.now() - started) / 1000;
 
   await expect(report).toBeVisible();
+  expect(presses).toBeLessThanOrEqual(7);
+  expect(seconds).toBeLessThanOrEqual(75);
   await expect(page.getByTestId('day-report-line')).toHaveText('That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed.');
   await expect(report).toContainText('6 of 6 answered on the first beep');
   await expect(page.getByText('PAUSED')).toBeVisible();

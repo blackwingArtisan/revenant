@@ -125,6 +125,7 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 6.27 WHILE the clock is on a day that has pages, THE SYSTEM SHALL show a 6 AM-to-midnight day bar under the time machine clock with one tick per page and a playhead at the current time.
 6.28 WHILE the clock is on the day the sheet shows, THE SYSTEM SHALL draw a "now" line between the pages already fired and the first page still ahead.
 6.29 WHILE a leave-now (911) page is beeping and the pager is not reading memory, THE SYSTEM SHALL light the edges of the screen in ember, pulsing, or as a still border WHERE the user prefers reduced motion.
+6.30 WHERE the viewport is 360 px wide or wider, THE SYSTEM SHALL keep the whole pager, including its LCD line, inside the viewport on the idle, running and 666 screens.
 
 ## Requirement 7: Time machine
 **User story:** As a presenter or tester, I want to drive the clock, so that a whole day can be shown in a minute.
@@ -143,6 +144,7 @@ All acceptance criteria use the EARS forms: `WHEN <event>, THE SYSTEM SHALL ...`
 7.12 WHEN the URL has `?sample`, THE SYSTEM SHALL load the sample day.
 7.13 WHEN the URL has `?fresh`, THE SYSTEM SHALL ignore saved state.
 7.14 WHEN the user presses the demo control on an empty pager, THE SYSTEM SHALL load the sample day first.
+7.15 WHILE a day run is paused on a page that does not count toward the daily budget (the digest, a check-in or a wrap-up), WHEN 1.5 seconds pass without an ACK, THE SYSTEM SHALL mark that page read and resume the run at 900x.
 
 ## Requirement 8: Adapters and the real path
 **User story:** As an operator, I want real routing and SMS behind the same interfaces, so that the free local demo and the production path share all logic.

@@ -6,7 +6,7 @@
 
 **Live app** · **Demo video** · **Devpost**: links are added when the entry is submitted. Until then: `npm ci && npm run dev`.
 
-**Try it in 60 seconds.** Press **Watch a day in about a minute**, then press **ACK** (or `A`) each time the pager stops on a page. The day ends on a receipt: *"That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed."*
+**Try it in 60 seconds.** Press **Watch a day (60 s)**, then press **ACK** (or `A`) each time the pager stops and beeps: six presses in all. The quiet digest and the body-double check-ins show for a moment and carry on by themselves. The day ends on a receipt: *"That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed."*
 
 - **Pages at the action, not the start.** `411` when it is time to get ready, `911` when it is time to walk out the door, worked out from travel time, a buffer and an honest prep time.
 - **Six beeps a day, not fifty-six.** A hard daily budget. Everything else goes into one silent `100` digest.
@@ -115,7 +115,7 @@ The engine is pure: each tick the app asks it "given these pages, these ACKs and
 - **Time zones done properly.** All math is in elapsed minutes; days, labels and the digest follow your IANA zone, including 23- and 25-hour DST days.
 - **Time you can see.** A 6 AM-to-midnight day bar under the clock with a tick per page and a moving playhead, a red "now" line across the day sheet, and the screen's edges glowing ember while a `911` beeps.
 - **Time machine.** Pause, +5/+15/+60 min, jump to the next page, 1x/60x/900x, and "Run the day from 6 AM", which stops on the exact minute a page fires. Travelling back replays the day exactly.
-- **One-press demo.** "Watch a day in about a minute" loads the sample day if the pager is empty and runs it from 6 AM at 900x. It stops on each page; ACK keeps the day running. Two earlier weeks of the same dinner, labelled "sample history" in the app, give the learner something to learn from, and the run ends on an end-of-day receipt.
+- **One-press demo.** "Watch a day (60 s)" loads the sample day if the pager is empty and runs it from 6 AM at 900x. It stops on each page. On a budgeted beep, ACK keeps the day running; a page outside the budget (the digest, a check-in, a wrap-up) holds for 1.5 seconds and carries on by itself, so the viewer presses ACK six times, once per beep on the receipt. An end-to-end test holds the run to at most 7 presses and 75 seconds. Two earlier weeks of the same dinner, labelled "sample history" in the app, give the learner something to learn from, and the run ends on an end-of-day receipt.
 - **It powers on like a 1990s pager.** A plain visit opens on a two-second boot: dark glass, two backlight flickers, `88888`, then `07734` (hELLO upside down). Reduced motion and the test and demo switches skip it; `?boot` asks for it.
 - **It buzzes.** On phones that support vibration, each page vibrates in the rhythm of its chirp, longer as it repeats.
 - **A readable LCD.** A message that fits sits still. A longer one shows its start, holds, scrolls to its end and repeats.

@@ -81,7 +81,7 @@ export default function App() {
         <div className="hero">
           <button type="button" className={`cta${boot.booted ? ' cta--wake' : ''}`} onClick={pager.demoDay} data-testid="demo-cta">
             <span className="cta-led" aria-hidden="true" />
-            Watch a day in about a minute
+            Watch a day (60 s)
           </button>
           <p className="why">
             About 15.5 million US adults, 1 in 16, have a current ADHD diagnosis (

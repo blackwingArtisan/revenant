@@ -142,10 +142,15 @@ test('runs the day at 900x and pauses itself when the pager goes off', async ({ 
   await page.goto('/?at=2026-11-19T05:00&tz=America/Chicago&sample');
   await page.getByRole('button', { name: 'Run the day from 6 AM' }).click();
   await expect(page.getByText('PLAY 900x')).toBeVisible();
-  // 6:00 to the 7:30 digest is 90 sim minutes: 6 real seconds at 900x.
+  // 6:00 to the 7:30 digest is 90 sim minutes: 6 real seconds at 900x. It is outside the budget,
+  // so the run holds on it for a moment and carries on to the first beep, where it waits for ACK.
   await expect(pager(page)).toHaveAttribute('data-state', 'quiet', { timeout: 15_000 });
+  await expect(pager(page)).toHaveAttribute('data-state', 'paging', { timeout: 20_000 });
   await expect(page.getByText('PAUSED')).toBeVisible();
-  await expect(page.getByTestId('vcr-clock')).toContainText('7:30');
+  await expect(page.getByTestId('vcr-clock')).toContainText('9:25');
+  await page.waitForTimeout(2_000);
+  await expect(page.getByText('PAUSED')).toBeVisible();
+  await expect(page.locator('[data-page-id="digest:2026-11-19"]')).toHaveAttribute('data-status', 'acked');
 });
 
 test('keeps the plan across a reload', async ({ page }) => {
