@@ -43,7 +43,10 @@ export function vibrate(level: number): void {
   }
 }
 
-export function beep(level: number, volume = 0.18): void {
+/** The secondary pager's chirp: one level-0 chirp, lower than the owner's so a shared screen tells them apart. */
+export const SECONDARY_PITCH = 1900;
+
+export function beep(level: number, volume = 0.18, pitch?: number): void {
   const c = context();
   if (!c) return;
   try {
@@ -54,7 +57,7 @@ export function beep(level: number, volume = 0.18): void {
     gain.connect(c.destination);
     const osc = c.createOscillator();
     osc.type = 'square';
-    osc.frequency.value = level > 0 ? 3200 : 2900;
+    osc.frequency.value = pitch ?? (level > 0 ? 3200 : 2900);
     osc.connect(gain);
     for (let i = 0; i < bursts; i++) {
       const t = start + i * 0.19;

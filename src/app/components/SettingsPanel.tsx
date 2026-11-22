@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { isValidTimeZone, pad, parseHm } from '../../engine/time';
+import type { NameCheck } from '../../engine/escalate';
 import type { TravelMode } from '../../engine/types';
 import type { PagerApi } from '../usePager';
 
@@ -60,6 +61,72 @@ function PlaceForm({ pager }: { pager: PagerApi }) {
         Save place
       </button>
     </form>
+  );
+}
+
+const NAME_ERROR: Record<Exclude<NameCheck, { ok: true }>['reason'], string> = {
+  empty: "Type your secondary's name to turn this on.",
+  'too-long': 'Use 24 characters or fewer.',
+  'control-characters': 'Use letters, numbers and spaces only.',
+};
+
+/** Opt-in second line of defence: name someone to be paged on a second on-screen pager when a must-go leave-now page goes unanswered. */
+function OnCallForm({ pager }: { pager: PagerApi }) {
+  const saved = pager.settings.onCall;
+  const enabled = saved?.enabled === true;
+  const [name, setName] = useState(saved?.name ?? '');
+  const [error, setError] = useState('');
+
+  function commit(on: boolean) {
+    const check = pager.setOnCall(on, name);
+    if (check.ok) {
+      setError('');
+      if (on) setName(check.name);
+    } else {
+      setError(NAME_ERROR[check.reason]);
+    }
+  }
+
+  return (
+    <div className="settings-block" data-testid="on-call-form">
+      <h3>On call</h3>
+      <label className="switch">
+        <input type="checkbox" role="switch" checked={enabled} onChange={(e) => commit(e.target.checked)} data-testid="on-call-switch" />
+        <span>Page my secondary if I miss a leave-now page</span>
+      </label>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (enabled) commit(true);
+        }}
+        noValidate
+      >
+        <label className="field">
+          <span>Secondary's name</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => {
+              if (enabled) commit(true);
+            }}
+            placeholder="Sam"
+            autoComplete="off"
+            aria-invalid={error !== ''}
+            aria-describedby={error ? 'on-call-error on-call-help' : 'on-call-help'}
+            data-testid="on-call-name"
+          />
+        </label>
+      </form>
+      {error && (
+        <p className="form-error" id="on-call-error" role="alert" data-testid="on-call-error">
+          {error}
+        </p>
+      )}
+      <p className="form-hint" id="on-call-help">
+        Only for must-go appointments, once a day, one minute after the last repeat. The name stays on this device and nothing is sent to anyone: your
+        secondary is paged on a second pager here, and the page uses one of your daily beeps.
+      </p>
+    </div>
   );
 }
 
@@ -158,6 +225,8 @@ export function SettingsPanel({ pager }: { pager: PagerApi }) {
           </datalist>
         </label>
       </div>
+
+      <OnCallForm pager={pager} />
 
       <div className="settings-block">
         <h3>Lock-screen pages</h3>

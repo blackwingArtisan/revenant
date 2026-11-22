@@ -3,7 +3,8 @@ import { BrowserNotificationChannel, MemoryChannel, RelaySmsChannel, type Notifi
 import { SimClock } from '../../src/adapters/clock';
 import { resolveTravel } from '../../src/adapters/resolve-travel';
 import { selectAdapters } from '../../src/adapters/select';
-import { isSnapshot, MemoryStore } from '../../src/adapters/storage';
+import { isSnapshot, LocalStorageStore, MemoryStore } from '../../src/adapters/storage';
+import { onCallName } from '../../src/engine/escalate';
 import { RelayTravel, StraightLineTravel, type TravelEstimator } from '../../src/adapters/travel';
 import { straightLineMinutes } from '../../src/engine/travel';
 import type { Alert } from '../../src/engine/types';
@@ -170,5 +171,56 @@ describe('storage', () => {
     expect(isSnapshot({ version: 2 })).toBe(false);
     store.clear();
     expect(store.load()).toBeNull();
+  });
+});
+
+describe('storage of the on-call setting', () => {
+  const base = { version: 1 as const, commitments: [], places: PLACES, runtime: { acks: {}, delivered: [] }, memory: [] };
+  const withStorage = (raw: string | null, run: (store: LocalStorageStore, backing: Map<string, string>) => void) => {
+    const backing = new Map<string, string>(raw === null ? [] : [['k', raw]]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => backing.get(k) ?? null,
+      setItem: (k: string, v: string) => void backing.set(k, v),
+      removeItem: (k: string) => void backing.delete(k),
+    });
+    try {
+      run(new LocalStorageStore('k'), backing);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  };
+
+  it('loads a snapshot saved before the feature with escalation off (Req 9.3)', () => {
+    const old = { ...base, settings: settings() };
+    expect(isSnapshot(old)).toBe(true);
+    withStorage(JSON.stringify(old), (store) => {
+      const loaded = store.load();
+      expect(loaded).not.toBeNull();
+      expect(loaded!.settings.onCall).toBeUndefined();
+      expect(onCallName(loaded!.settings)).toBeNull();
+    });
+  });
+
+  it('treats a malformed on-call value as off and keeps the rest of the snapshot (Req 1.9)', () => {
+    const bad = { ...base, commitments: [appt({ start: at(DAY, 10, 30) })], settings: { ...settings(), onCall: { enabled: true, name: 7 } } };
+    withStorage(JSON.stringify(bad), (store) => {
+      const loaded = store.load();
+      expect(loaded).not.toBeNull();
+      expect(loaded!.settings.onCall).toBeUndefined();
+      expect(loaded!.commitments).toHaveLength(1);
+      expect(loaded!.settings.dailyBudget).toBe(settings().dailyBudget);
+    });
+  });
+
+  it('round-trips the setting, the delivered escalation alert and its ACK (Req 9.1, 9.2)', () => {
+    const snap = {
+      ...base,
+      settings: { ...settings(), onCall: { enabled: false, name: 'Sam' } },
+      runtime: { acks: { 'c1:escalate': at(DAY, 10, 20) }, delivered: ['c1:escalate#0'] },
+    };
+    withStorage(null, (store) => {
+      store.save(snap);
+      expect(store.load()).toEqual(snap);
+    });
   });
 });

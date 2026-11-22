@@ -5,6 +5,7 @@ import { CodeCard } from './components/CodeCard';
 import { DaySheet } from './components/DaySheet';
 import { ImportPanel } from './components/ImportPanel';
 import { Pager } from './components/Pager';
+import { SecondaryPager } from './components/SecondaryPager';
 import { SettingsPanel } from './components/SettingsPanel';
 import { TimeMachine } from './components/TimeMachine';
 import { useBoot } from './useBoot';
@@ -34,6 +35,7 @@ export default function App() {
       if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
       const k = e.key.toLowerCase();
       if (k === 'a') pager.ack();
+      else if (k === 's') pager.ackSecondary();
       else if (k === 'r') pager.read();
       else if (k === 'm') pager.setSound(!pager.sound);
       else if (k === 'n') pager.controls.nextPage();
@@ -96,8 +98,9 @@ export default function App() {
       <main className={`layout${pager.controls.dayRun ? ' layout--running' : ''}`}>
         <div className="col col--device">
           <Pager pager={pager} boot={boot.phase} />
+          <SecondaryPager pager={pager} />
           <p className="keys">
-            Keys: <kbd>A</kbd> ACK · <kbd>R</kbd> read memory · <kbd>M</kbd> mute · <kbd>N</kbd> next page
+            Keys: <kbd>A</kbd> ACK · <kbd>S</kbd> ACK secondary · <kbd>R</kbd> read memory · <kbd>M</kbd> mute · <kbd>N</kbd> next page
           </p>
           <TimeMachine pager={pager} />
           <CodeCard />

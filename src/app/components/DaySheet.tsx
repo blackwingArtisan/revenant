@@ -1,6 +1,6 @@
 import { dayReportLine, silenceLine, type DayReport } from '../../engine/report';
 import { localDayKey, parseDayKey, readableClock } from '../../engine/time';
-import type { DigestItem, PageStatus, PlannedPage } from '../../engine/types';
+import type { DigestItem, EscalationStatus, PlannedPage } from '../../engine/types';
 import type { PagerApi } from '../usePager';
 import { Fragment } from 'react';
 import { PrepAdvice } from './PrepAdvice';
@@ -13,11 +13,12 @@ function NowLine({ label }: { label: string }) {
   );
 }
 
-const STATUS_LABEL: Record<PageStatus, string> = {
+const STATUS_LABEL: Record<EscalationStatus, string> = {
   scheduled: 'Armed',
   paging: 'Paging',
   acked: "ACK'd",
   missed: 'Missed',
+  cancelled: 'Cancelled',
 };
 
 const KIND_LABEL: Record<PlannedPage['kind'], string> = {
@@ -198,6 +199,7 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
           <ol className="pages" aria-label="Pages planned for today">
             {today.pages.map((p, i) => {
               const status = statusOf(p);
+              const escalation = p.kind === 'escalation';
               return (
                 <Fragment key={p.id}>
                   {i === nowAt && <NowLine label={readableClock(pager.now, tz)} />}
@@ -207,11 +209,11 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
                       <span className="page-code">{p.code}</span>
                     </span>
                     <span className="page-what">
-                      <span className="page-kind">{KIND_LABEL[p.kind]}</span>
+                      <span className="page-kind">{escalation && p.secondaryName ? `${KIND_LABEL[p.kind]}: ${p.secondaryName}` : KIND_LABEL[p.kind]}</span>
                       <span className="page-text">{p.text}</span>
                       {p.escalateAt.length > 0 && <span className="page-esc">repeats {p.escalateAt.length}x until ACK</span>}
                     </span>
-                    {status === 'missed' && !p.silent ? (
+                    {status === 'missed' && !p.silent && !escalation ? (
                       <span className="rip">
                         <span className="stamp stamp--missed" data-testid="rip">
                           <span className="sr-only">Missed. </span>RIP {readableClock(p.fireAt, tz).replace(/ (AM|PM)$/, '')}
@@ -223,7 +225,15 @@ export function DaySheet({ pager }: { pager: PagerApi }) {
                         )}
                       </span>
                     ) : (
-                      <span className={`stamp stamp--${status}`}>{p.silent && status !== 'acked' ? (status === 'scheduled' ? 'Quiet' : 'Unread') : STATUS_LABEL[status]}</span>
+                      <span className={`stamp stamp--${status}`} data-testid={status === 'cancelled' ? 'cancelled' : undefined}>
+                        {status === 'cancelled'
+                          ? 'cancelled, you answered'
+                          : p.silent && status !== 'acked'
+                            ? status === 'scheduled'
+                              ? 'Quiet'
+                              : 'Unread'
+                            : STATUS_LABEL[status]}
+                      </span>
                     )}
                   </li>
                 </Fragment>

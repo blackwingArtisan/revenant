@@ -6,7 +6,8 @@ import { resolveTravel } from '../adapters/resolve-travel';
 import { diffSchedules, type ScheduledSet } from '../adapters/schedule-sync';
 import { selectAdapters } from '../adapters/select';
 import { emptyPrepAdvice, LocalStorageStore, type MemoryEntry, type PrepAdviceState, type Snapshot } from '../adapters/storage';
-import { nextAlertAt, pageStatus } from '../engine/alerts';
+import { nextAlertAt } from '../engine/alerts';
+import { escalationStatus, isEscalation, normalizeSecondaryName, onCallName, splitByPager, type EscalationStatus, type NameCheck } from '../engine/escalate';
 import { parseIcs } from '../engine/ics';
 import { icsToCommitments, mergeCommitments } from '../engine/importer';
 import { suggestPrepTimes, type PrepSuggestion } from '../engine/learn';
@@ -16,8 +17,8 @@ import { acknowledge, activePages, emptyRuntimeState, firstDueBetween, pinnedPag
 import { dayReport as computeDayReport, dayReportLine, haunting as computeHaunting, type DayReport } from '../engine/report';
 import { defaultSettings, sampleWithHistory, SAMPLE_PLACES } from '../engine/sample';
 import { addDays, DAY, HOUR, isValidTimeZone, localDayKey, parseDayKey, readableClock, startOfDay, zonedToEpoch } from '../engine/time';
-import type { Commitment, PageStatus, Place, PlannedPage, Settings } from '../engine/types';
-import { beep, unlockAudio, vibrate } from './beep';
+import type { Commitment, Place, PlannedPage, Settings } from '../engine/types';
+import { beep, SECONDARY_PITCH, unlockAudio, vibrate } from './beep';
 
 const MEMORY_SIZE = 30;
 const store = new LocalStorageStore();
@@ -227,19 +228,34 @@ export function usePager() {
     if (r.state === runtimeRef.current) return;
     setRuntime(r.state);
     if (r.fresh.length === 0) return;
-    const received = r.fresh.map((a) => ({ ...a, receivedAt: at }));
-    setMemory((m) => [...received.reverse(), ...m].slice(0, MEMORY_SIZE));
-    setReadIndex(null);
-    const loud = r.fresh.filter((a) => !a.silent);
-    if (loud.length > 0) {
-      setBeeps((b) => b + 1);
-      const level = Math.max(...loud.map((a) => a.level));
-      if (soundRef.current) beep(level);
-      vibrate(level);
+    // An escalation alert belongs to the secondary pager: it never enters the owner's memory, notifications or channel (Req 4.7, 12.5).
+    const secondaryIds = new Set(plan.pages.filter(isEscalation).map((p) => p.id));
+    const freshOwn = r.fresh.filter((a) => !secondaryIds.has(a.pageId));
+    const freshSecondary = r.fresh.filter((a) => secondaryIds.has(a.pageId));
+    if (freshOwn.length > 0) {
+      const received = freshOwn.map((a) => ({ ...a, receivedAt: at }));
+      setMemory((m) => [...received.reverse(), ...m].slice(0, MEMORY_SIZE));
+      setReadIndex(null);
+      const loud = freshOwn.filter((a) => !a.silent);
+      if (loud.length > 0) {
+        setBeeps((b) => b + 1);
+        const level = Math.max(...loud.map((a) => a.level));
+        if (soundRef.current) beep(level);
+        vibrate(level);
+      }
+      const top = freshOwn[freshOwn.length - 1]!;
+      setAnnouncement(`Page ${top.code}. ${top.text}`);
+      for (const a of freshOwn) void adapters.channel.deliver(a).then(setLastReceipt, () => undefined);
     }
-    const top = r.fresh[r.fresh.length - 1]!;
-    setAnnouncement(`Page ${top.code}. ${top.text}`);
-    for (const a of r.fresh) void adapters.channel.deliver(a).then(setLastReceipt, () => undefined);
+    if (freshSecondary.length > 0) {
+      // One lower chirp, muted with the rest; the page is announced without moving focus (Req 4.5, 10.5, 11.2).
+      if (soundRef.current) {
+        beep(0, 0.18, SECONDARY_PITCH);
+        vibrate(0);
+      }
+      const top = freshSecondary[freshSecondary.length - 1]!;
+      setAnnouncement(`Secondary on call. Page ${top.code}. ${top.text}`);
+    }
     if (stopRef.current && clock.speed > 1) {
       // A fast clock overshoots between ticks; stop exactly when the page went off.
       clock.pause();
@@ -291,7 +307,12 @@ export function usePager() {
     store.save({ version: 1, commitments, places, settings, runtime, memory, prepAdvice: advice, rebooksDone });
   }, [commitments, places, settings, runtime, memory, advice, rebooksDone]);
 
-  const active = useMemo(() => activePages(plan.pages, runtime, now), [plan, runtime, now]);
+  const activeAll = useMemo(() => activePages(plan.pages, runtime, now), [plan, runtime, now]);
+  // Two pagers from one plan: the owner's never shows an escalation page (Req 4.7).
+  const { primary: active, secondary: secondaryActive } = useMemo(() => splitByPager(activeAll), [activeAll]);
+  // Today's escalation page, whatever its state, for the secondary pager's idle and missed lines.
+  const secondaryPage = useMemo(() => splitByPager(plan.days[0]!.pages).secondary[0] ?? null, [plan]);
+  const onCall = onCallName(settings);
 
   // A day run ends once every beeping page of the day is answered or missed: stop and show the receipt.
   const report = useMemo(() => computeDayReport(plan.days[0]!, runtime.acks, now), [plan, runtime.acks, now]);
@@ -326,7 +347,7 @@ export function usePager() {
     (pageId?: string) => {
       unlockAudio();
       cancelAutoResume();
-      const target = pageId ?? activePages(plan.pages, runtimeRef.current, clock.now())[0]?.id;
+      const target = pageId ?? splitByPager(activePages(plan.pages, runtimeRef.current, clock.now())).primary[0]?.id;
       if (!target) {
         if (hauntingRef.current && readIndexRef.current === null) {
           if (hauntingRef.current.id.startsWith('rebook:')) {
@@ -351,6 +372,20 @@ export function usePager() {
     },
     [plan, clock, setRuntime, cancelAutoResume],
   );
+
+  /** The secondary presses ACK: records the escalation page's own id and nothing else (Req 6.4, 6.6). No network, no withdraw. */
+  const ackSecondary = useCallback(() => {
+    unlockAudio();
+    const target = splitByPager(activePages(plan.pages, runtimeRef.current, clock.now())).secondary[0]?.id;
+    if (!target) return;
+    cancelAutoResume();
+    setRuntime(acknowledge(runtimeRef.current, target, clock.now()));
+    setAnnouncement('Secondary page acknowledged.');
+    if (dayRunRef.current && clock.speed === 0) {
+      clock.setSpeed(900);
+      setSpeedState(900);
+    }
+  }, [plan, clock, setRuntime, cancelAutoResume]);
 
   // ACK from the lock-screen notification, relayed by the service worker.
   useEffect(() => {
@@ -543,6 +578,26 @@ export function usePager() {
 
   const updateSettings = useCallback((patch: Partial<Settings>) => setSettings((s) => ({ ...s, ...patch })), []);
 
+  /**
+   * Turn escalation on or off, or save the name while on. A refused name changes nothing, so escalation
+   * stays as it was (off when it was being turned on) and the saved name is kept (Req 1.2-1.7).
+   */
+  const setOnCall = useCallback((enabled: boolean, rawName: string): NameCheck => {
+    if (!enabled) {
+      setSettings((s) => {
+        const saved = s.onCall;
+        return saved ? { ...s, onCall: { ...saved, enabled: false } } : s;
+      });
+      return { ok: true, name: rawName };
+    }
+    const check = normalizeSecondaryName(rawName);
+    if (check.ok) {
+      setSettings((s) => ({ ...s, onCall: { enabled: true, name: check.name } }));
+      setAnnouncement(`Secondary on call: ${check.name}. Saved on this device only.`);
+    }
+    return check;
+  }, []);
+
   const reset = useCallback(() => {
     store.clear();
     const fresh = freshSnapshot(tz);
@@ -569,7 +624,7 @@ export function usePager() {
     }
   }, []);
 
-  const statusOf = useCallback((p: PlannedPage): PageStatus => pageStatus(p, runtime.acks, now), [runtime, now]);
+  const statusOf = useCallback((p: PlannedPage): EscalationStatus => escalationStatus(p, runtime.acks, now), [runtime, now]);
 
   const today = plan.days[0]!;
   const shown: MemoryEntry | null =
@@ -589,6 +644,9 @@ export function usePager() {
     runtime,
     memory,
     active,
+    secondary: { onCall, active: secondaryActive[0] ?? null, page: secondaryPage },
+    ackSecondary,
+    setOnCall,
     shown,
     readIndex,
     beeps,

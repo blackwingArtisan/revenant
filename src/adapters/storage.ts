@@ -1,3 +1,4 @@
+import { readOnCall } from '../engine/escalate';
 import type { RuntimeState } from '../engine/runtime';
 import type { Alert, Commitment, Place, Settings } from '../engine/types';
 
@@ -63,6 +64,17 @@ export function isSnapshot(value: unknown): value is Snapshot {
   );
 }
 
+/**
+ * A loaded snapshot with its on-call setting cleaned: a missing one stays missing (escalation off),
+ * a malformed one is dropped (off), and the rest of the snapshot is kept untouched.
+ */
+export function cleanSnapshot(snapshot: Snapshot): Snapshot {
+  if (snapshot.settings.onCall === undefined) return snapshot;
+  const onCall = readOnCall(snapshot.settings.onCall);
+  const { onCall: _stored, ...rest } = snapshot.settings;
+  return { ...snapshot, settings: onCall ? { ...rest, onCall } : rest };
+}
+
 /** Browser storage. Every access is guarded: private windows and blocked storage just fall back to a fresh pager. */
 export class LocalStorageStore implements PagerStore {
   constructor(private readonly key = 'revenant-pager:v1') {}
@@ -72,7 +84,7 @@ export class LocalStorageStore implements PagerStore {
       const raw = globalThis.localStorage?.getItem(this.key);
       if (!raw) return null;
       const parsed: unknown = JSON.parse(raw);
-      return isSnapshot(parsed) ? parsed : null;
+      return isSnapshot(parsed) ? cleanSnapshot(parsed) : null;
     } catch {
       return null;
     }
