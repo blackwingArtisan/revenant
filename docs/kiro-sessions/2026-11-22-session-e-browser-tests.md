@@ -2,7 +2,7 @@
 
 - Tool: kiro-cli 3.5.0, v3 engine, non-interactive
 - Command (repo root, stdin closed): `PW_PORT=3850 kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command,@context7 "<prompt>" </dev/null` (not `--trust-all-tools`)
-- When: 2026-11-19, 18:24:22 to 18:47:38 UTC (23 min 16 s wall time, under a 25-minute cap); exit code 0
+- When: 2026-11-22, 18:24:22 to 18:47:38 UTC (23 min 16 s wall time, under a 25-minute cap); exit code 0
 - Credits used: 39.01 (kiroween2026 `/usage` read 361.14 before and 400.15 after)
 - Finished on its own in 23 min 16 s (exit code 0; 39.01 credits), on AC power with no sleep entries in the power log.
 - MCP, on the record: Kiro called Context7 four times (`@context7/resolve-library-id` twice, `@context7/query-docs` twice), resolving `/dequelabs/axe-core-npm` and `/microsoft/playwright`, and checked the AxeBuilder `withTags`/`analyze` shapes and `page.emulateMedia({ reducedMotion })` before writing the axe and reduced-motion tests. Context7 was trusted for this session with `--trust-tools=...,@context7`.

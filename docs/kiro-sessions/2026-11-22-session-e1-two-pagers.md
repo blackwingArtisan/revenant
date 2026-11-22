@@ -2,7 +2,7 @@
 
 - Tool: kiro-cli 3.5.0, v3 engine, non-interactive
 - Command (repo root, stdin closed): `PW_PORT=3850 kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command "<prompt>" </dev/null` (not `--trust-all-tools`)
-- When: 2026-11-19, 17:48:06 to 17:59:23 UTC (11 min 17 s wall time, under a 25-minute cap); exit code 0
+- When: 2026-11-22, 17:48:06 to 17:59:23 UTC (11 min 17 s wall time, under a 25-minute cap); exit code 0
 - Credits used: 8.11 (kiroween2026 `/usage` read 353.00 before and 361.11 after)
 - Finished on its own in 11 min 17 s (exit code 0; 8.11 credits), on AC power with the lid open and no sleep entries in the power log.
 - Kiro fixed the three typecheck errors the previous session left (it switched `statusOf` to `escalationStatus` and typed the day sheet labels as `Record<EscalationStatus, string>`), then finished tasks 12 to 16: `SecondaryPager.tsx` (new), the S key in `App.tsx`, the on-call block in `SettingsPanel.tsx`, the escalation row in `DaySheet.tsx`, styles and `usePager.ts` (`ackSecondary`, `setOnCall`). It ticked tasks 11 to 16.

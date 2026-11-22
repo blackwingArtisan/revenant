@@ -2,7 +2,7 @@
 
 - Tool: kiro-cli 3.5.0, v3 engine, non-interactive
 - Command (repo root, stdin closed): `PW_PORT=3850 kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command --output-format stream-json "<prompt>" </dev/null` (not `--trust-all-tools`)
-- When: 2026-11-19, 19:10:56 to 19:17:22 UTC (6 min 26 s wall time, under a 25-minute cap); exit code 0
+- When: 2026-11-22, 19:10:56 to 19:17:22 UTC (6 min 26 s wall time, under a 25-minute cap); exit code 0
 - Credits used: 2.07 (kiroween2026 `/usage` read 433.43 before and 438.20 after)
 - Finished on its own in 6 min 26 s (exit code 0). 2.07 credits, read from this session's own `session_usage` event in kiro-cli's stream-json output. Other agents were using the same credit pool at the time, so the balance moved by 4.77.
 - The task: a fresh-clone run had hit a fast-check counterexample (seed 363408089) to an older property, "never adds a page when a prep-time suggestion is applied (Req 9.6)". It also fails on the commit before any escalation work.
