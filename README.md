@@ -13,11 +13,12 @@
 | Kiro feature | In this repo | Proof |
 |---|---|---|
 | Spec (EARS) | 10 requirements, 151 acceptance criteria, design with a threat model and five correctness properties, 46 tasks mapped to criteria, and a test that fails if a criterion has no task | [`.kiro/specs/time-blind-paging/`](.kiro/specs/time-blind-paging) |
+| Spec, end to end | Kiro wrote the on-call escalation spec (12 requirements, 71 EARS criteria, 21 tasks) and built all 21 tasks: engine, two-pager app, relay guard, docs and 10 browser tests | [`.kiro/specs/on-call-escalation/`](.kiro/specs/on-call-escalation), [sessions B to E](KIRO-LOG.md#sessions) |
 | Spec task execution | Kiro built the late-ACK learner and the geocoder from open tasks 25 and 26, and its own test caught a bug it then fixed | [Session A](docs/kiro-sessions/2026-11-19-session-a.md) |
 | Steering | product, tech and structure always included; relay rules only when `src/relay/**` is in context (fileMatch); a demo script pulled in by hand (manual) | [`.kiro/steering/`](.kiro/steering) |
-| Hooks | 8: a PreToolUse guard that blocks `Date.now` and `Math.random` in the engine, tests on save, a paging-rules agent hook, a purity check, a post-task traceability check, checks on stop, code-card sync, demo ready | [`.kiro/hooks/`](.kiro/hooks) |
-| Custom agent | `revenant-engine`, limited to the engine, its tests and the spec | [`.kiro/agents/`](.kiro/agents) |
-| MCP | AWS Documentation and Context7 | [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json) |
+| Hooks | 8: a PreToolUse guard that blocks `Date.now` and `Math.random` in the engine (it refused Kiro's own probe write on the record, [session D2](docs/kiro-sessions/2026-11-19-session-d2-guard-probe.md)), tests on save, a paging-rules agent hook, a purity check, a post-task traceability check, checks on stop, code-card sync, demo ready | [`.kiro/hooks/`](.kiro/hooks) |
+| Custom agent | `revenant-engine`, limited to the engine, its tests and the spec; it built the escalation engine | [`.kiro/agents/`](.kiro/agents) |
+| MCP | AWS Documentation and Context7, version-pinned; Kiro used Context7 to check the axe and reduced-motion APIs before writing the browser tests | [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json), [session E](docs/kiro-sessions/2026-11-22-session-e-browser-tests.md) |
 
 - **Pages at the action, not the start.** `411` when it is time to get ready, `911` when it is time to walk out the door, worked out from travel time, a buffer and an honest prep time.
 - **Six beeps a day, not fifty-six.** A hard daily silence budget. Everything else goes into one silent `100` digest.
