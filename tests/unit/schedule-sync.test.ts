@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { RelaySmsChannel } from '../../src/adapters/channel';
 import { diffSchedules } from '../../src/adapters/schedule-sync';
+import { alertsForPage } from '../../src/engine/alerts';
 import { planDays } from '../../src/engine/plan';
 import type { Commitment } from '../../src/engine/types';
 import { appt, at, PLACES, settings } from './helpers';
@@ -75,5 +76,33 @@ describe('remote schedule sync', () => {
       'https://relay.example.com/ack',
       'https://relay.example.com/page',
     ]);
+  });
+
+  it('an escalation page makes no relay call and is never scheduled (Req 12.4, 12.5)', async () => {
+    const must = appt({ id: 'd', start: at(DAY, 10, 30), prepMinutes: 20, priority: 'must' });
+    const on = planDays({
+      commitments: [must],
+      places: PLACES,
+      settings: settings({ onCall: { enabled: true, name: 'Sam' } }),
+      travelMinutes: { d: 15 },
+      dayKeys: [DAY],
+    }).pages;
+    const escalation = on.filter((p) => p.kind === 'escalation');
+    expect(escalation).toHaveLength(1);
+
+    const diff = diffSchedules({}, escalation, {}, at(DAY, 8, 0));
+    expect(diff.create).toEqual([]);
+    expect(diff.next).toEqual({});
+    const full = diffSchedules({}, on, {}, at(DAY, 8, 0));
+    expect(full.create.some((a) => a.pageId.endsWith(':escalate'))).toBe(false);
+
+    const fetchImpl = vi.fn(async () => new Response('{}', { status: 200 }));
+    const ch = new RelaySmsChannel('https://relay.example.com', 'token', fetchImpl as unknown as typeof fetch);
+    const alerts = alertsForPage(escalation[0]!, undefined, Number.POSITIVE_INFINITY);
+    expect(alerts.length).toBeGreaterThan(0);
+    expect(await ch.schedule(alerts)).toBe(true);
+    for (const a of alerts) expect((await ch.deliver(a)).delivered).toBe(false);
+    await ch.withdraw(escalation[0]!.id);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

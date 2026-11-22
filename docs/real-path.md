@@ -44,6 +44,14 @@ The SDK package `@aws-sdk/client-geo-places` is **not installed** in this reposi
 2. In `lambda.ts`, build the client: `places: { send: (r) => placesClient.send(new GeocodeCommand(r.input)) }` with `new GeoPlacesClient({ region })`.
 3. Grant the Lambda role `geo-places:Geocode`.
 
+## Out of scope: SMS to the secondary
+The on-call escalation (`999`, spec `on-call-escalation`) is on-screen only. `channel.ts` and `schedule-sync.ts` drop escalation pages and their alerts, so the relay never receives one. Texting the secondary through the relay is a follow-up, and it is the first feature that would message someone other than the user, so it needs:
+- **Consent.** The secondary agrees in their own words, from their own number, before any text; no number is stored without it.
+- **An opt-out path.** A reply of STOP (and a way to remove the person in the app) ends it at once.
+- **A cap.** A per-number daily limit in the relay's ledger, separate from the owner's cap, so the relay cannot be used to text a stranger repeatedly.
+- **A threat-model row.** In the relay design: who may register a number, what an attacker gains by naming someone else's number, and how the secret and origin checks apply.
+Until those exist, nothing in the app or the relay sends, stores or asks for a phone number.
+
 ## Setting it up (owner steps, not automated)
 1. **Phone number.** In AWS End User Messaging SMS, register an origination identity (a toll-free number needs registration before it can send). Put its ARN or number in `RELAY_ORIGINATION_IDENTITY`.
 2. **Scheduler.** Create a schedule group (default `revenant-pager`) and an IAM role that EventBridge Scheduler can assume to invoke the relay Lambda. Set `RELAY_SCHEDULER_TARGET_ARN` (the Lambda ARN) and `RELAY_SCHEDULER_ROLE_ARN`.

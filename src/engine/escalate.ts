@@ -53,6 +53,11 @@ export function isEscalation(p: PlannedPage): boolean {
   return p.kind === 'escalation';
 }
 
+/** True for an alert of an escalation page (its id is `<commitment>:escalate`), which never leaves the device (Req 12.4, 12.5). */
+export function isEscalationAlert(a: { pageId: string }): boolean {
+  return a.pageId.endsWith(':escalate');
+}
+
 export function escalationId(leaveNow: PlannedPage): string {
   return `${leaveNow.commitmentId ?? 'none'}:escalate`;
 }

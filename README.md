@@ -22,6 +22,7 @@
 - **Pages at the action, not the start.** `411` when it is time to get ready, `911` when it is time to walk out the door, worked out from travel time, a buffer and an honest prep time.
 - **Six beeps a day, not fifty-six.** A hard daily silence budget. Everything else goes into one silent `100` digest.
 - **Repeats until you ACK.** `911 911`, then `NOW!!`, and it learns from the pages you answer late.
+- **A second line of defence.** Name someone on call, and if you still have not answered your must-go `911` a minute after its last repeat, a second on-screen pager, "SECONDARY ON CALL", pages them with `999`. Off by default, on-screen only: nothing is sent to anyone, and it uses one of your daily beeps.
 
 **Kiroween 2026, category Resurrection.** *What died:* the pager, a device that was trusted because it was almost always silent. *What came back:* its behaviour, not just its look: numeric codes, a strict silence budget, repeats until ACK, and pages you ignore coming back to haunt you as `666`.
 
@@ -109,7 +110,7 @@ The engine is pure: each tick the app asks it "given these pages, these ACKs and
 Every feature, and how each part switches between the free local adapter and the AWS one: [`docs/features.md`](docs/features.md).
 
 ## Codes
-`411` get ready · `911` leave now · `911 911` still here? · `121` body double · `200` wrap up · `100` digest · `666` missed, and it comes back · `07734` hELLO. The full wallet card is in the app and in [`docs/features.md`](docs/features.md#codes).
+`411` get ready · `911` leave now · `911 911` still here? · `121` body double · `200` wrap up · `100` digest · `666` missed, and it comes back · `999` secondary on call (off by default, on-screen only) · `07734` hELLO. The full wallet card is in the app and in [`docs/features.md`](docs/features.md#codes).
 
 ## Run it
 Requires Node 22 or later.

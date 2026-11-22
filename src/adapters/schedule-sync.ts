@@ -1,4 +1,5 @@
 import { alertsForPage, type Acks } from '../engine/alerts';
+import { isEscalation } from '../engine/escalate';
 import type { Alert, PlannedPage } from '../engine/types';
 
 /** What has been handed to the remote scheduler: one signature per page id. */
@@ -30,7 +31,9 @@ function signature(alerts: readonly Alert[]): string {
  * Silent and acknowledged pages are never scheduled; only beeps still in the
  * future are sent.
  */
-export function diffSchedules(prev: ScheduledSet, pages: readonly PlannedPage[], acks: Acks, now: number): ScheduleDiff {
+export function diffSchedules(prev: ScheduledSet, allPages: readonly PlannedPage[], acks: Acks, now: number): ScheduleDiff {
+  // Escalation pages are on-screen only: they never enter the diff, so none is sent or withdrawn (Req 12.4).
+  const pages = allPages.filter((p) => !isEscalation(p));
   const withdraw: string[] = [];
   const create: Alert[] = [];
   const next: Record<string, string> = {};

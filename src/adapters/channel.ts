@@ -1,3 +1,4 @@
+import { isEscalationAlert } from '../engine/escalate';
 import type { Alert } from '../engine/types';
 
 export interface DeliveryReceipt {
@@ -74,6 +75,7 @@ export class BrowserNotificationChannel implements PagerChannel {
   constructor(private readonly host: NotificationHost = browserNotificationHost) {}
 
   async deliver(alert: Alert): Promise<DeliveryReceipt> {
+    if (isEscalationAlert(alert)) return { channel: this.name, delivered: false, detail: 'on-screen only' };
     if (alert.silent) return { channel: this.name, delivered: false, detail: 'silent page' };
     const permission = this.host.permission();
     if (permission !== 'granted') return { channel: this.name, delivered: false, detail: `notifications ${permission}` };
@@ -129,6 +131,7 @@ export class RelaySmsChannel implements PagerChannel {
   }
 
   async deliver(alert: Alert): Promise<DeliveryReceipt> {
+    if (isEscalationAlert(alert)) return { channel: this.name, delivered: false, detail: 'on-screen only' };
     if (alert.silent) return { channel: this.name, delivered: false, detail: 'silent page' };
     if (this.scheduled.has(alert.id)) return { channel: this.name, delivered: true, detail: 'sent by the relay schedule' };
     const res = await this.post('/page', { pageId: alert.pageId, code: alert.code, text: alert.text });
@@ -136,12 +139,13 @@ export class RelaySmsChannel implements PagerChannel {
   }
 
   async withdraw(pageId: string): Promise<void> {
+    if (isEscalationAlert({ pageId })) return;
     for (const id of [...this.scheduled]) if (id.startsWith(`${pageId}#`)) this.scheduled.delete(id);
     await this.post('/ack', { pageId });
   }
 
   async schedule(alerts: readonly Alert[]): Promise<boolean> {
-    const loud = alerts.filter((a) => !a.silent);
+    const loud = alerts.filter((a) => !a.silent && !isEscalationAlert(a));
     if (loud.length === 0) return true;
     const res = await this.post('/schedule', {
       alerts: loud.map(({ id, at, code, text }) => ({ id, at, code, text })),

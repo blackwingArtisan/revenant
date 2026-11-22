@@ -349,6 +349,11 @@ kbd {
     order: 2;
     margin-top: -12px;
   }
+  /* The owner's pager and its keys stay first; the secondary pager follows them, before the day sheet. */
+  .secondary-wrap {
+    order: 3;
+    margin-top: 0;
+  }
   .sheet {
     order: 3;
   }

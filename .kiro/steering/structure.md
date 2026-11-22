@@ -12,6 +12,7 @@ src/
     travel.ts        straight-line travel estimate, origin chaining
     plan.ts          commitments -> pages: lead times, budget, digest, body double
     alerts.ts        escalation: which beeps have happened by a given instant
+    escalate.ts      on-call escalation: eligibility, instant, message, cancellation, name check (pure)
     learn.ts         prep-time suggestions from late ACKs (advisory, pure)
     runtime.ts       delivery state: tick, acknowledge, rewind
     ics.ts           iCalendar reader (RRULE, EXDATE, RECURRENCE-ID, TZID)
@@ -23,7 +24,7 @@ src/
   relay/             real path only: AWS Lambda (Location routes and Places, SMS, Scheduler)
   app/               React PWA
     index.html, main.tsx, App.tsx, usePager.ts, beep.ts, styles.css
-    components/      Pager, TimeMachine, DaySheet, PrepAdvice, AddForm, ImportPanel, SettingsPanel, CodeCard
+    components/      Pager, TimeMachine, DaySheet, PrepAdvice, SecondaryPager, AddForm, ImportPanel, SettingsPanel, CodeCard
 public/              service worker, manifest, icons
 tests/
   unit/              Vitest: engine, ics, adapters, relay
