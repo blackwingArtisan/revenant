@@ -133,8 +133,15 @@ describe('correctness properties', () => {
         });
         const after = planDays(input(applied));
         expect(after.pages.length).toBeLessThanOrEqual(before.pages.length);
+        // A longer prep time can move a get-ready page up the budget ranking (earlier pages rank first),
+        // so it may take the slot of another page. It never creates a page for a commitment without prep.
         const ids = new Set(before.pages.map((p) => p.id));
-        for (const p of after.pages) expect(ids.has(p.id), p.id).toBe(true);
+        const hadPrep = new Set(commitments.filter((c) => c.prepMinutes > 0).map((c) => c.id));
+        for (const p of after.pages) {
+          if (ids.has(p.id)) continue;
+          expect(p.kind, p.id).toBe('get-ready');
+          expect(hadPrep.has(p.commitmentId ?? ''), p.id).toBe(true);
+        }
       }),
       RUNS,
     );

@@ -118,7 +118,7 @@ Each property must hold for every input, not only the examples in the unit tests
 | **ACK stops every repeat.** For any page and any ACK at or after its first beep, no alert of that page falls after the ACK. | 2.1, 2.2 |
 | **The plan is deterministic.** The same commitments and settings give the same plan, in the same order, whatever order the commitments arrive in. | 1.10 |
 | **Nothing pages at an event's start.** Every beeping page of an appointment fires before its start time. | 1.1, 1.9 |
-| **The learner never adds a page.** Applying every prep-time suggestion to the commitments it names gives a plan with no page id that was not already there. | 9.6 |
+| **The learner never adds a page.** Applying every prep-time suggestion to the commitments it names never raises the page count, and a page id that was not in the plan before is only the get-ready page of a commitment that already had prep time (a longer prep can rank it above another get-ready page for the same budget slot). | 9.6, 9.13 |
 
 The properties found two bugs the examples had missed, both fixed with a regression test beside the examples:
 - With the buffer set to 0, a video call with no prep paged JOIN NOW at its start time. The leave-now page now always leads the start by at least `MIN_LEAVE_LEAD_MIN` (2 minutes).

@@ -154,6 +154,36 @@ describe('learning from late ACKs', () => {
     expect(suggestPrepTimes(input(c, acks, undefined, { ignoreBefore: { [key]: at('2026-11-19', 0) } }))).toEqual([]);
   });
 
+  it('applying a suggestion never raises the page count, only re-ranks get-ready pages (Req 9.6)', () => {
+    // Shrunk fast-check counterexample (seed 363408089), built by hand: seven budgeted pages compete for 6 slots.
+    const start = at('2026-11-19', 10, 0);
+    const base = { start, end: start + 15 * M, source: 'manual' as const };
+    const commitments: Commitment[] = [
+      appt({ ...base, id: 'c4', title: 'Standup', placeId: 'online', prepMinutes: 5, priority: 'normal' }),
+      appt({ ...base, id: 'c6', title: 'Standup', placeId: 'online', prepMinutes: 20, priority: 'must' }),
+      appt({ ...base, id: 'c7', title: 'Dentist', placeId: 'online', prepMinutes: 10, priority: 'normal' }),
+      appt({ ...base, id: 'c8', title: 'Dentist', kind: 'focus', placeId: null, prepMinutes: 0, priority: 'must' }),
+    ];
+    const plan = (cs: Commitment[]) => planDays({ commitments: cs, places: PLACES, settings: settings(), travelMinutes: {}, dayKeys: ['2026-11-19'] });
+    const before = plan(commitments);
+    const acks = Object.fromEntries(before.pages.filter((p) => p.kind === 'leave-now').map((p) => [p.id, p.fireAt + 3 * M]));
+    const suggestions = suggestPrepTimes({ pages: before.pages, commitments, acks, settings: settings(), now: at('2026-11-21', 0) });
+    expect(suggestions.length).toBeGreaterThan(0);
+    const applied = commitments.map((c) => {
+      const s = suggestions.find((x) => x.commitmentIds.includes(c.id));
+      return s ? { ...c, prepMinutes: s.suggestedPrepMinutes } : c;
+    });
+    const after = plan(applied);
+    const ids = new Set(before.pages.map((p) => p.id));
+    expect(after.pages.length).toBeLessThanOrEqual(before.pages.length);
+    expect(after.days[0]!.budget.used).toBeLessThanOrEqual(before.days[0]!.budget.used);
+    // The longer prep moves c4's get-ready earlier than c7's, so it takes c7's slot: a swap, not an addition.
+    const added = after.pages.filter((p) => !ids.has(p.id));
+    expect(added.map((p) => p.id)).toEqual(['c4:get-ready']);
+    expect(before.pages.some((p) => p.id === 'c7:get-ready')).toBe(true);
+    expect(after.pages.some((p) => p.id === 'c7:get-ready')).toBe(false);
+  });
+
   it('is deterministic, independent of input order, and changes nothing', () => {
     const days = DAYS.slice(0, 3);
     const c = routine(days);
