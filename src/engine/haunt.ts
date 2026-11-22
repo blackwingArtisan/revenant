@@ -1,5 +1,6 @@
 import { alertsUpTo, pageStatus } from './alerts';
 import { MISSED_CODE } from './codes';
+import { isEscalation } from './escalate';
 import type { RuntimeState } from './runtime';
 import { addDays, HOUR, MINUTE, startOfDay } from './time';
 import type { Commitment, DayPlan, PlannedPage } from './types';
@@ -13,7 +14,9 @@ import type { Commitment, DayPlan, PlannedPage } from './types';
 
 /** The page a replay lets slip: the first must-go leave-now, else the first budgeted leave-now, else the first budgeted page. */
 export function pickIgnoreTarget(day: DayPlan, commitments: readonly Commitment[]): PlannedPage | null {
-  const loud = day.pages.filter((p) => p.countsToBudget && !p.silent).sort((a, b) => a.fireAt - b.fireAt || a.id.localeCompare(b.id));
+  const loud = day.pages
+    .filter((p) => p.countsToBudget && !p.silent && !isEscalation(p))
+    .sort((a, b) => a.fireAt - b.fireAt || a.id.localeCompare(b.id));
   const priority = new Map(commitments.map((c) => [c.id, c.priority]));
   return (
     loud.find((p) => p.kind === 'leave-now' && p.commitmentId !== null && priority.get(p.commitmentId) === 'must') ??
@@ -31,9 +34,11 @@ export function pickIgnoreTarget(day: DayPlan, commitments: readonly Commitment[
  */
 export function ignoreReplay(day: DayPlan, targetPageId: string): { state: RuntimeState; dayOverAt: number } | null {
   const target = day.pages.find((p) => p.id === targetPageId);
-  if (!target) return null;
+  if (!target || isEscalation(target)) return null;
   const acks: Record<string, number> = {};
-  for (const p of day.pages) if (p.id !== targetPageId) acks[p.id] = p.fireAt;
+  // Escalation pages are never answered here: those of answered pages cancel themselves,
+  // and the target's own escalation page stays unanswered so the secondary is paged.
+  for (const p of day.pages) if (p.id !== targetPageId && !isEscalation(p)) acks[p.id] = p.fireAt;
   const dayOverAt = Math.max(...day.pages.filter((p) => !p.silent).map((p) => p.cutoffAt));
   const delivered = alertsUpTo(day.pages, acks, dayOverAt).map((a) => a.id);
   return { state: { acks, delivered }, dayOverAt };
@@ -65,7 +70,7 @@ export function rebookPage(missedDay: DayPlan, runtime: RuntimeState, commitment
   const titles = new Map(commitments.map((c) => [c.id, c.title]));
   const ids: string[] = [];
   for (const p of [...missedDay.pages].sort((a, b) => a.fireAt - b.fireAt || a.id.localeCompare(b.id))) {
-    if (!p.countsToBudget || p.silent || p.commitmentId === null || ids.includes(p.commitmentId)) continue;
+    if (!p.countsToBudget || p.silent || isEscalation(p) || p.commitmentId === null || ids.includes(p.commitmentId)) continue;
     const beeped = runtime.delivered.some((id) => id.startsWith(`${p.id}#`));
     if (beeped && pageStatus(p, runtime.acks, now) === 'missed') ids.push(p.commitmentId);
   }

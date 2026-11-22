@@ -36,6 +36,13 @@ export interface Commitment {
   allDay?: boolean;
 }
 
+/** Opt-in on-call escalation: who is paged on a second pager when a must-go 911 goes unanswered. */
+export interface OnCallSettings {
+  enabled: boolean;
+  /** The secondary's name as typed: trimmed, 1-24 characters, no control characters. */
+  name: string;
+}
+
 export interface Settings {
   timeZone: string;
   /** Hard cap on beeping pages per local day. */
@@ -52,9 +59,11 @@ export interface Settings {
   travelMode: TravelMode;
   /** Used when a place has no coordinates. */
   defaultTravelMinutes: number;
+  /** Absent means escalation is off. */
+  onCall?: OnCallSettings;
 }
 
-export type PageKind = 'get-ready' | 'leave-now' | 'focus-start' | 'check-in' | 'wrap-up' | 'digest';
+export type PageKind = 'get-ready' | 'leave-now' | 'focus-start' | 'check-in' | 'wrap-up' | 'digest' | 'escalation';
 
 export interface PlannedPage {
   /** Stable id: `${commitmentId}:${kind}` (check-ins add `:${n}`; digest is `digest:${dayKey}`). */
@@ -74,6 +83,10 @@ export interface PlannedPage {
   countsToBudget: boolean;
   priority: Priority;
   dayKey: string;
+  /** Escalation pages only: the leave-now page that, if acknowledged at or before this page's fireAt, cancels it. */
+  dependsOn?: string;
+  /** Escalation pages only: the secondary's name, for the day sheet and the receipt. */
+  secondaryName?: string;
 }
 
 export type DigestReason = 'low-priority' | 'over-budget' | 'all-day';
@@ -114,3 +127,6 @@ export interface Alert {
 }
 
 export type PageStatus = 'scheduled' | 'paging' | 'acked' | 'missed';
+
+/** PageStatus plus `cancelled`: an escalation page whose leave-now page was answered in time. */
+export type EscalationStatus = PageStatus | 'cancelled';

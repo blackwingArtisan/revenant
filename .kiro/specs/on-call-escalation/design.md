@@ -114,18 +114,18 @@ Message: `${NAME}: OWNER MISSED 911, ${VERB} FOR ${TITLE}. STARTS ${LCD CLOCK}`.
 `pickIgnoreTarget` skips pages of kind `escalation`. `ignoreReplay` acknowledges every other page except escalation pages at its first beep; the answered leave-now pages cancel their own escalation pages, while the target's escalation page stays unanswered and is part of `delivered` up to `dayOverAt`. The escalation instant is before the target's cutoff, and the 666 recap appears at the latest cutoff, so the order is repeats, then secondary pager, then 666 (Req 8.2).
 
 ### Worked example on the sample day
-Assumptions: America/Chicago, settings from `defaultSettings` (budget 6, buffer 5, honesty 1.5, repeats at 3, 6 and 10 minutes), `SAMPLE_ON_CALL` with the name "Sam", and the home to dentist estimate of 16 minutes (4.7 km straight line, times 1.3, at 35 km/h plus 6 minutes overhead; the unit test pins the exact value from `travel.ts`).
+Assumptions: America/Chicago, settings from `defaultSettings` (budget 6, buffer 5, honesty 1.5, repeats at 3, 6 and 10 minutes), `SAMPLE_ON_CALL` with the name "Sam", and the home to dentist estimate of 17 minutes (`straightLineMinutes` in `travel.ts`: 4.7 km straight line, times 1.3, at 35 km/h plus 6 minutes overhead, rounded up; `escalate.test.ts` pins it).
 
 Without the feature the day has seven budgeted candidates and keeps six: dentist 911, pickup 911, dentist 411, stand-up (JOIN), dinner 911, taxes 121. Dinner 411 goes to the digest.
 
 With the feature on:
-1. Eligible pages (`must` leave-now): dentist 911 at 10:09 and school pickup 911 at about 14:58. The dentist fires first, so it is the day's one candidate.
+1. Eligible pages (`must` leave-now): dentist 911 at 10:08 and school pickup 911 in the afternoon. The dentist fires first, so it is the day's one candidate.
 2. Reserve one slot. Rank the rest against five: dentist 911, pickup 911, dentist 411 (all must), then stand-up 911 and dinner 911 (normal, leave-now first). The dentist 911 is kept, so the reservation stands.
 3. Taxes 121 and dinner 411 now go to the digest as over-budget. `budget.used` = 5 + 1 = 6 of 6.
-4. Dentist 911: start 10:30, leave 10:09, repeats 10:12, 10:15, 10:19. Last beep 10:19, escalation instant 10:20, cutoff 10:30.
+4. Dentist 911: start 10:30, leave 10:08, repeats 10:11, 10:14, 10:18. Last beep 10:18, escalation instant 10:19, cutoff 10:30.
 5. Page `sample-dentist:escalate`, code 999: `SAM: OWNER MISSED 911, LEAVE FOR DENTIST CLEANING. STARTS 10:30A`.
 
-Timeline if the user ignores it: 10:09 911, 10:12 911 911, 10:15 911 911 911, 10:19 911 911 911, 10:20 secondary pager 999, 10:30 cutoff, then the 666 recap. If the user presses ACK at 10:16, `acks['sample-dentist:leave-now'] = 10:16 <= 10:20`, so the escalation is cancelled. If they press ACK at 10:25, Sam was already paged and stays paged.
+Timeline if the user ignores it: 10:08 911, 10:11 911 911, 10:14 911 911 911, 10:18 911 911 911, 10:19 secondary pager 999, 10:30 cutoff, then the 666 recap. If the user presses ACK at 10:16, `acks['sample-dentist:leave-now'] = 10:16 <= 10:19`, so the escalation is cancelled. If they press ACK at 10:25, Sam was already paged and stays paged.
 
 ## Diagrams
 ```mermaid
@@ -183,12 +183,14 @@ Checked in `tests/unit/properties.test.ts` (or a new `tests/unit/escalate.proper
 - Regression: the existing plan, report and haunt tests pass unchanged with `onCall` absent.
 - Traceability: `tests/unit/traceability.test.ts` checks every folder under `.kiro/specs`.
 - Purity: `tests/unit/purity.test.ts` scans the new engine file.
-- End to end (Playwright, production build, Chromium desktop and phone): turn it on with a name and see validation messages; reload keeps it; jump to the dentist 911 on the sample day and see the secondary pager at 10:20 with the right text; ACK on the secondary pager by button and key S; ACK of the 911 at 10:16 cancels it; day sheet row and receipt line; the replay shows 911s, then the secondary pager, then 666; axe-core scan with the secondary pager paging; reduced motion; no network request while the escalation beeps.
+- End to end (Playwright, production build, Chromium desktop and phone): turn it on with a name and see validation messages; reload keeps it; jump to the dentist 911 on the sample day and see the secondary pager at 10:19 with the right text; ACK on the secondary pager by button and key S; ACK of the 911 at 10:16 cancels it; day sheet row and receipt line; the replay shows 911s, then the secondary pager, then 666; axe-core scan with the secondary pager paging; reduced motion; no network request while the escalation beeps.
 
 ## Out of scope: delivery to a real person
 Sending the escalation through the relay (an SMS to the secondary's own number through Amazon End User Messaging, scheduled with EventBridge Scheduler) is a follow-up. It needs the secondary's consent and number, an opt-out path, a per-number daily cap in the relay's ledger and a threat-model row in the relay design, because it is the first feature that would text someone other than the user. Nothing in this pass sends, stores or asks for a phone number.
 
-## Open questions
+## Open questions (decided)
+The developer kept all six recommended defaults as written. The defaults below are now the design.
+
 1. **The owner's name in the message.** The message says "OWNER MISSED 911" because the app does not know the user's name. Recommended default: keep "OWNER" in this pass, and add an optional "Your name" field in the follow-up that delivers to a real person, where the secondary needs to know who is asking.
 2. **One escalation per day.** A day with two must leave-now pages escalates only the first. Recommended default: keep one, since each extra reservation costs a primary page. Revisit if the budget default rises.
 3. **Reserved slot never refunded.** If the user answers in time, the slot is unused, and the page it displaced stays in the digest. Recommended default: accept it, because refunding would make the plan depend on ACKs.

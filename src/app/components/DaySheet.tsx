@@ -27,6 +27,7 @@ const KIND_LABEL: Record<PlannedPage['kind'], string> = {
   'check-in': 'Check-in',
   'wrap-up': 'Wrap up',
   digest: 'Digest',
+  escalation: 'Secondary on call',
 };
 
 const REASON_LABEL: Record<DigestItem['reason'], string> = {

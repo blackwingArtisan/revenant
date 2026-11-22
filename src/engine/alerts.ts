@@ -1,4 +1,5 @@
 import { escalatedCode } from './codes';
+import { isCancelled } from './escalate';
 import type { Alert, PageStatus, PlannedPage } from './types';
 
 /** Acknowledgement time per page id. */
@@ -33,6 +34,7 @@ export function alertsForPage(p: PlannedPage, ackAt: number | undefined, now: nu
 /** Every alert the plan has produced by `now`, oldest first. Pure. */
 export function alertsUpTo(pages: readonly PlannedPage[], acks: Acks, now: number): Alert[] {
   return pages
+    .filter((p) => !isCancelled(p, acks))
     .flatMap((p) => alertsForPage(p, acks[p.id], now))
     .sort((a, b) => a.at - b.at || a.id.localeCompare(b.id));
 }
@@ -48,7 +50,7 @@ export function pageStatus(p: PlannedPage, acks: Acks, now: number): PageStatus 
 export function nextAlertAt(pages: readonly PlannedPage[], acks: Acks, now: number): number | null {
   let best: number | null = null;
   for (const p of pages) {
-    if (acks[p.id] !== undefined) continue;
+    if (acks[p.id] !== undefined || isCancelled(p, acks)) continue;
     for (const t of [p.fireAt, ...p.escalateAt]) {
       if (t > now && t < p.cutoffAt && (best === null || t < best)) best = t;
     }

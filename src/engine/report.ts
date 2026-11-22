@@ -1,4 +1,5 @@
 import { pageStatus, type Acks } from './alerts';
+import { escalationStatus, isEscalation } from './escalate';
 import { ackLevel } from './learn';
 import { MISSED_CODE } from './codes';
 import type { DayPlan } from './types';
@@ -14,6 +15,10 @@ export interface DayReport {
   missed: number;
   /** Budgeted pages answered on their first beep. */
   firstBeep: number;
+  /** Set only on a day that has an escalation page: how many were not cancelled. */
+  escalated?: number;
+  /** Set only on a day that has an escalation page: the secondary's name. */
+  secondaryName?: string | null;
 }
 
 /**
@@ -24,25 +29,34 @@ export interface DayReport {
 export function dayReport(day: DayPlan, acks: Acks, now: number): DayReport | null {
   const loud = day.pages.filter((p) => !p.silent);
   if (loud.length === 0) return null;
-  const statuses = loud.map((p) => ({ p, status: pageStatus(p, acks, now) }));
+  const statuses = loud.map((p) => ({ p, status: escalationStatus(p, acks, now) }));
   if (statuses.some(({ status }) => status === 'scheduled' || status === 'paging')) return null;
-  const budgeted = statuses.filter(({ p }) => p.countsToBudget);
-  return {
+  // A cancelled escalation never beeped, so it is not a beep (Req 7.3); an escalation page is never "missed" (Req 7.4).
+  const budgeted = statuses.filter(({ p, status }) => p.countsToBudget && status !== 'cancelled');
+  const own = budgeted.filter(({ p }) => !isEscalation(p));
+  const escalations = loud.filter(isEscalation);
+  const report: DayReport = {
     dayKey: day.dayKey,
     beeps: budgeted.length,
     budget: day.budget.limit,
     keptQuiet: day.digest.length,
-    missed: budgeted.filter(({ status }) => status === 'missed').length,
-    firstBeep: budgeted.filter(({ p }) => {
+    missed: own.filter(({ status }) => status === 'missed').length,
+    firstBeep: own.filter(({ p }) => {
       const ackAt = acks[p.id];
       return ackAt !== undefined && ackAt < p.cutoffAt && ackLevel(p, ackAt) === 0;
     }).length,
   };
+  if (escalations.length > 0) {
+    report.escalated = budgeted.length - own.length;
+    report.secondaryName = escalations[0]?.secondaryName ?? null;
+  }
+  return report;
 }
 
 /** "That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed." */
 export function dayReportLine(r: DayReport): string {
-  return `That was your day: ${r.beeps} beep${r.beeps === 1 ? '' : 's'}, ${r.keptQuiet} kept quiet in the digest, ${r.missed} missed.`;
+  const escalated = r.escalated && r.escalated > 0 && r.secondaryName ? `, ${r.escalated} escalated to ${r.secondaryName}` : '';
+  return `That was your day: ${r.beeps} beep${r.beeps === 1 ? '' : 's'}, ${r.keptQuiet} kept quiet in the digest, ${r.missed} missed${escalated}.`;
 }
 
 /** Median notifications a phone delivers in a day (Pielot et al., MobileHCI 2018; see docs/evidence.md). */
@@ -77,7 +91,9 @@ export function haunting(day: DayPlan, acks: Acks, now: number): Haunting | null
   const report = dayReport(day, acks, now);
   if (!report || report.missed === 0) return null;
   const loud = day.pages.filter((p) => !p.silent);
-  const missed = loud.filter((p) => p.countsToBudget && pageStatus(p, acks, now) === 'missed').sort((a, b) => a.fireAt - b.fireAt);
+  const missed = loud
+    .filter((p) => p.countsToBudget && !isEscalation(p) && pageStatus(p, acks, now) === 'missed')
+    .sort((a, b) => a.fireAt - b.fireAt);
   return {
     id: `haunting:${day.dayKey}`,
     dayKey: day.dayKey,

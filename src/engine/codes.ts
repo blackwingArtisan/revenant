@@ -14,7 +14,11 @@ export const CODE_FOR: Record<PageKind, string> = {
   'check-in': '121',
   'wrap-up': '200',
   digest: '100',
+  escalation: '999',
 };
+
+/** The label on the second, on-screen pager that shows escalation pages. */
+export const SECONDARY_LABEL = 'SECONDARY ON CALL';
 
 export const BOOT_CODE = '07734';
 export const MISSED_CODE = '666';
@@ -26,6 +30,7 @@ export const CODE_CARD: CodeEntry[] = [
   { code: '121', meaning: 'Body double', detail: 'Start, or check in on, a focus block.' },
   { code: '200', meaning: 'Wrap up', detail: 'Focus block is over. Stop, save, stand up.' },
   { code: '100', meaning: 'Digest', detail: 'One quiet page with everything that did not earn a beep.' },
+  { code: '999', meaning: 'Secondary on call', detail: 'You missed a must-go 911, so your secondary is paged. On this screen only.' },
   { code: '666', meaning: 'Missed', detail: 'A page nobody answered. It stays in memory to haunt you.' },
   { code: '07734', meaning: 'hELLO', detail: 'Turn the pager upside down.' },
 ];

@@ -1,5 +1,8 @@
 import { addDays, parseDayKey, zonedToEpoch, MINUTE } from './time';
-import type { Commitment, Place, Settings } from './types';
+import type { Commitment, OnCallSettings, Place, Settings } from './types';
+
+/** The invented secondary used by the demo and the tests. `defaultSettings` leaves escalation off. */
+export const SAMPLE_ON_CALL: OnCallSettings = { enabled: true, name: 'Sam' };
 
 /** Invented places in an invented town. Coordinates are illustrative. */
 export const SAMPLE_PLACES: Place[] = [

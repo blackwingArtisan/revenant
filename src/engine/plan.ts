@@ -1,4 +1,5 @@
 import { CODE_FOR } from './codes';
+import { escalationFor, onCallName, pickEligible } from './escalate';
 import { addDays, lcdClock, localDayKey, MINUTE, startOfDay, zonedToEpoch, parseDayKey } from './time';
 import type {
   Commitment,
@@ -196,6 +197,7 @@ export function planDays(input: PlanInput): Plan {
   const wanted = new Set(input.dayKeys);
   const pinned = new Set(input.pinnedPageIds ?? []);
   const byId = new Map(input.commitments.map((c) => [c.id, c]));
+  const onCall = onCallName(settings);
 
   const digestByDay = new Map<string, DigestItem[]>();
   const addDigest = (dayKey: string, item: DigestItem) => {
@@ -253,8 +255,12 @@ export function planDays(input: PlanInput): Plan {
   for (const [dayKey, list] of budgeted) {
     const ranked = [...list].sort((a, b) => rankPages(a, b, pinned));
     const limit = Math.max(0, Math.floor(settings.dailyBudget));
+    // Reserve one slot for an escalation page before ranking the rest (Req 5.2).
+    const candidate = onCall && limit >= 2 ? pickEligible(list, byId, settings, pinned) : null;
+    const reservedKeep = candidate && ranked.slice(0, limit - 1).some((p) => p.id === candidate.id);
+    const keep = reservedKeep ? limit - 1 : limit;
     ranked.forEach((p, i) => {
-      if (i < limit) {
+      if (i < keep) {
         keptIds.add(p.id);
         if (wanted.has(dayKey)) kept.push(p);
       } else {
@@ -269,7 +275,14 @@ export function planDays(input: PlanInput): Plan {
         });
       }
     });
-    used.set(dayKey, Math.min(limit, ranked.length));
+    let usedSlots = Math.min(keep, ranked.length);
+    const commitment = candidate?.commitmentId ? byId.get(candidate.commitmentId) : undefined;
+    const escalation = reservedKeep && candidate && commitment && onCall ? escalationFor(candidate, commitment, onCall, tz) : null;
+    if (escalation) {
+      usedSlots += 1;
+      if (wanted.has(dayKey)) kept.push(escalation);
+    }
+    used.set(dayKey, usedSlots);
   }
   for (const r of riders) {
     if (r.commitmentId && keptIds.has(`${r.commitmentId}:focus-start`) && wanted.has(r.dayKey)) kept.push(r);
