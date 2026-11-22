@@ -20,7 +20,8 @@
     "check": "npm run typecheck && npm test",
     "check:engine": "vitest run tests/unit/purity.test.ts",
     "check:trace": "vitest run tests/unit/traceability.test.ts",
-    "demo:ready": "playwright test tests/e2e/demo.spec.ts --project=desktop"
+    "demo:ready": "playwright test tests/e2e/demo.spec.ts --project=desktop",
+    "build:static": "VITE_TRAVEL=local VITE_CHANNEL=browser vite build"
   },
   "dependencies": {
     "@fontsource/big-shoulders-display": "5.3.0",

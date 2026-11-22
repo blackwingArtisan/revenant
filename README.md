@@ -1,5 +1,7 @@
 # Revenant
 
+[![CI](https://github.com/blackwingArtisan/revenant/actions/workflows/ci.yml/badge.svg)](https://github.com/blackwingArtisan/revenant/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **The 1990s pager, back from the dead for ADHD brains. It stays silent all day and goes off only at the moment you have to act.**
 
 ![The one-press demo: the pager runs a sample day at 900x, stops on the quiet digest, then on 911 and 411 pages, and each ACK keeps the day running.](docs/media/demo.gif)
