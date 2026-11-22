@@ -11,7 +11,7 @@
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp@4.5.0"],
       "disabled": false,
-      "autoApprove": ["resolve-library-id", "get-library-docs"]
+      "autoApprove": ["resolve-library-id", "query-docs"]
     }
   }
 }

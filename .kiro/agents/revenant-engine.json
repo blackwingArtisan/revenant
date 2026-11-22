@@ -11,7 +11,7 @@
     ]
   },
   "hooks": {
-    "preToolUse": [{ "matcher": "fs_write", "command": "node scripts/hooks/engine-write-guard.mjs" }],
+    "preToolUse": [{ "matcher": "^(fs_write|str_replace)$", "command": "node scripts/hooks/engine-write-guard.mjs" }],
     "stop": [{ "command": "npm run -s check" }]
   },
   "resources": [

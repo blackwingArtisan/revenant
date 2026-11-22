@@ -43,6 +43,42 @@ describe('engine write guard (PreToolUse on fs_write)', () => {
     expect(guard(write('tests/unit/plan.test.ts', { command: 'create', file_text: 'Math.random()' })).status).toBe(0);
   });
 
+  describe('kiro-cli 3.5 payloads (text, newStr) with an absolute path', () => {
+    const engine = `${ROOT}/src/engine/plan.ts`;
+    const create = (path: string, text: string) => ({ hook_event_name: 'PreToolUse', tool_name: 'fs_write', tool_input: { path, text } });
+    const replace = (path: string, newStr: string) => ({ hook_event_name: 'PreToolUse', tool_name: 'str_replace', tool_input: { path, oldStr: 'x', newStr, replace_all: false } });
+
+    it('blocks Date.now in a create', () => {
+      const r = guard(create(engine, 'export const probe = Date.now();'));
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain('Date.now()');
+    });
+    it('blocks Date.now in a replace', () => {
+      const r = guard(replace(engine, 'export const probe = Date.now();'));
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain('Date.now()');
+    });
+    it('allows a pure line in a create and in a replace', () => {
+      expect(guard(create(engine, 'export const probe = 1;\n')).status).toBe(0);
+      expect(guard(replace(engine, 'export const probe = 1;\n')).status).toBe(0);
+    });
+    it('allows Date.now outside src/engine', () => {
+      expect(guard(create(`${ROOT}/src/app/x.ts`, 'export const probe = Date.now();')).status).toBe(0);
+      expect(guard(replace(`${ROOT}/src/app/x.ts`, 'export const probe = Date.now();')).status).toBe(0);
+    });
+  });
+
+  it('is matched for both fs_write and str_replace in the hook and the agent', () => {
+    const hook = JSON.parse(readFileSync(join(ROOT, '.kiro/hooks/engine-write-guard.json'), 'utf8')) as { hooks: { matcher: string }[] };
+    const agent = JSON.parse(readFileSync(join(ROOT, '.kiro/agents/revenant-engine.json'), 'utf8')) as { hooks: { preToolUse: { matcher: string }[] } };
+    for (const m of [hook.hooks[0]!.matcher, agent.hooks.preToolUse[0]!.matcher]) {
+      expect(m).toBe('^(fs_write|str_replace)$');
+      expect(new RegExp(m).test('fs_write')).toBe(true);
+      expect(new RegExp(m).test('str_replace')).toBe(true);
+      expect(new RegExp(m).test('read_file')).toBe(false);
+    }
+  });
+
   it('never blocks on an event it cannot read', () => {
     expect(guard('not json').status).toBe(0);
     expect(guard({}).status).toBe(0);

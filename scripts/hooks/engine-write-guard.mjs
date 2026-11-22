@@ -21,8 +21,9 @@ const input = event?.tool_input ?? {};
 const path = input.path ?? input.file_path;
 if (!isEnginePath(path)) process.exit(0);
 
-// fs_write carries the new text in file_text (create), new_str (str_replace, insert) or content.
-const texts = [input.file_text, input.new_str, input.content].filter((t) => typeof t === 'string');
+// The new text arrives as `text` (fs_write) or `newStr` (str_replace) in kiro-cli 3.5;
+// file_text, new_str and content are the older names.
+const texts = [input.text, input.newStr, input.file_text, input.new_str, input.content].filter((t) => typeof t === 'string');
 const reasons = [...new Set(texts.flatMap(engineViolations))];
 if (reasons.length === 0) process.exit(0);
 
