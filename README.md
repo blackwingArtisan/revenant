@@ -132,7 +132,7 @@ npx playwright install chromium   # once
 npm run test:e2e   # Playwright against the production build (desktop + phone)
 ```
 
-219 unit tests (Vitest, including fast-check properties) and 31 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone. [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the same suites on every push.
+315 unit tests in 23 files (Vitest, including fast-check properties), plus 1 skipped by design, and 41 end-to-end tests (Playwright, desktop and Pixel 7), all passing from a clean clone. A full Vitest run fails if the unit count here goes out of date. [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the same suites on every push.
 
 What each suite covers, test by test: [`docs/testing.md`](docs/testing.md).
 

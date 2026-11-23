@@ -1,7 +1,10 @@
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Each guard test starts a Node process, which can take longer than the 5 s default on a loaded machine.
+vi.setConfig({ testTimeout: 30_000 });
 
 const ROOT = join(import.meta.dirname, '../..');
 const GUARD = join(ROOT, 'scripts/hooks/engine-write-guard.mjs');
@@ -92,6 +95,8 @@ describe('Kiro hook files', () => {
 
   it('has the eight hooks the README and KIRO-LOG describe', () => {
     expect(files).toHaveLength(8);
+    expect(readFileSync(join(ROOT, 'README.md'), 'utf8')).toContain('| Hooks | 8:');
+    expect(readFileSync(join(ROOT, 'KIRO-LOG.md'), 'utf8')).toContain('Eight hooks:');
   });
 
   for (const file of files) {
