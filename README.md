@@ -6,7 +6,7 @@
 
 ![The one-press demo: the pager runs a sample day at 900x, stops on the quiet digest, then on 911 and 411 pages, and each ACK keeps the day running.](docs/media/demo.gif)
 
-**Live app** · **Demo video** · **Devpost**: links are added when the entry is submitted. Until then: `npm ci && npm run dev`.
+**Live app: [revenant-b44.pages.dev](https://revenant-b44.pages.dev/)**. It runs entirely in your browser: pages beep on this screen and travel times are straight-line estimates from saved places. To run it locally: `npm ci && npm run dev`.
 
 **Try it in 60 seconds.** Press **Watch a day (60 s)**, then press **ACK** (or `A`) each time the pager stops and beeps: six presses in all. The quiet digest and the body-double check-ins show for a moment and carry on by themselves. The day ends on a receipt: *"That was your day: 6 beeps, 4 kept quiet in the digest, 0 missed."*
 
